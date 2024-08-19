@@ -7,6 +7,9 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
+use wgpu::util::DeviceExt;
+use wgpu::VertexStepMode::Vertex;
+
 pub struct State<'a> {
     #[allow(dead_code)]
     instance: wgpu::Instance,
@@ -21,6 +24,9 @@ pub struct State<'a> {
     window: &'a Window,
 
     render_pipeline: wgpu::RenderPipeline,
+    vertex_buffer: wgpu::Buffer,
+    index_buffer: wgpu::Buffer,
+
 }
 
 impl<'a> State<'a> {
@@ -92,6 +98,21 @@ impl<'a> State<'a> {
 
         let clear_color = wgpu::Color::BLACK;
         let render_pipeline = create_pipeline(&device, &config);
+        let vertex_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Vertex Buffer"),
+                contents: bytemuck::cast_slice(super::structure::VERTICES),
+                usage: wgpu::BufferUsages::VERTEX,
+            }
+        );
+
+        let index_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Index Buffer"),
+                contents: bytemuck::cast_slice(super::structure::INDICES),
+                usage: wgpu::BufferUsages::INDEX,
+            }
+        );
 
         Self {
             instance,
@@ -103,7 +124,9 @@ impl<'a> State<'a> {
             clear_color,
             size,
             window,
-            render_pipeline
+            render_pipeline,
+            vertex_buffer,
+            index_buffer
         }
     }
 
@@ -156,7 +179,7 @@ impl<'a> State<'a> {
                     view: &view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color{r: 0.1, g:0.2, b:0.3,a:1.0}),
+                        load: wgpu::LoadOp::Clear(wgpu::Color{r: 1.0, g:1.0, b:1.0,a:1.0}),
                         store: wgpu::StoreOp::Store,
                     },
                 })],
@@ -165,7 +188,9 @@ impl<'a> State<'a> {
                 timestamp_writes: None,
             });
             _render_pass.set_pipeline(&self.render_pipeline);
-            _render_pass.draw(0..3, 0..1);
+            _render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            _render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            _render_pass.draw_indexed(0..super::structure::INDICES.len() as u32, 0, 0..1);
         }
 
         self.queue.submit(iter::once(encoder.finish()));
@@ -194,7 +219,9 @@ fn create_pipeline(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration) -
         vertex: wgpu::VertexState {
             module: &shader,
             entry_point: "vs_main", // 1.
-            buffers: &[], // 2.
+            buffers: &[
+                super::structure::Vertex::desc(),
+            ], // 2.
             compilation_options: wgpu::PipelineCompilationOptions::default(),
         },
         fragment: Some(wgpu::FragmentState { // 3.
@@ -202,7 +229,7 @@ fn create_pipeline(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration) -
             entry_point: "fs_main",
             targets: &[Some(wgpu::ColorTargetState { // 4.
                 format: config.format,
-                blend: Some(wgpu::BlendState::REPLACE),
+                blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                 write_mask: wgpu::ColorWrites::ALL,
             })],
             compilation_options: wgpu::PipelineCompilationOptions::default(),
@@ -232,69 +259,3 @@ fn create_pipeline(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration) -
     render_pipeline
 }
 
-// async fn run() {
-//     env_logger::init();
-//     let event_loop = EventLoop::new().unwrap();
-//     let window = WindowBuilder::new().build(&event_loop).unwrap();
-
-//     // State::new uses async code, so we're going to wait for it to finish
-//     let mut state = State::new(&window).await;
-//     let mut surface_configured = false;
-
-//     event_loop
-//         .run(move |event, control_flow| {
-//             match event {
-//                 Event::WindowEvent {
-//                     ref event,
-//                     window_id,
-//                 } if window_id == state.window().id() => {
-//                     if !state.input(event) {
-//                         match event {
-//                             WindowEvent::CloseRequested
-//                             | WindowEvent::KeyboardInput {
-//                                 event:
-//                                     KeyEvent {
-//                                         state: ElementState::Pressed,
-//                                         physical_key: PhysicalKey::Code(KeyCode::Escape),
-//                                         ..
-//                                     },
-//                                 ..
-//                             } => control_flow.exit(),
-//                             WindowEvent::Resized(physical_size) => {
-//                                 state.resize(*physical_size);
-//                                 surface_configured = true;
-//                             }
-//                             WindowEvent::RedrawRequested => {
-//                                 state.window().request_redraw();
-
-//                                 if !surface_configured {
-//                                     return;
-//                                 }
-
-//                                 state.update();
-//                                 match state.render() {
-//                                     Ok(_) => {}
-//                                     // Reconfigure the surface if it's lost or outdated
-//                                     Err(
-//                                         wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated,
-//                                     ) => state.resize(state.size),
-//                                     // The system is out of memory, we should probably quit
-//                                     Err(wgpu::SurfaceError::OutOfMemory) => {
-//                                         log::error!("OutOfMemory");
-//                                         control_flow.exit();
-//                                     }
-//                                     // We're ignoring timeouts
-//                                     Err(wgpu::SurfaceError::Timeout) => {
-//                                         log::warn!("Surface timeout")
-//                                     }
-//                                 }
-//                             }
-//                             _ => {}
-//                         }
-//                     }
-//                 }
-//                 _ => {}
-//             }
-//         })
-//         .unwrap();
-// }

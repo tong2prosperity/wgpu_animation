@@ -6,10 +6,16 @@ use winit::{
     window::WindowBuilder,
 };
 
+
+
+
+
 pub async fn run() {
     env_logger::init();
     let event_loop = EventLoop::new().unwrap();
-    let window = WindowBuilder::new().build(&event_loop).unwrap();
+    let window = WindowBuilder::new().
+        with_inner_size(winit::dpi::LogicalSize::new(super::present::structure::WIDTH, super::present::structure::HEIGHT)).
+        build(&event_loop).unwrap();
 
     // State::new uses async code, so we're going to wait for it to finish
     let mut state = state::State::new(&window).await;
