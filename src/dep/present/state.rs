@@ -26,6 +26,7 @@ pub struct State<'a> {
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
+    index_size : usize,
 
 }
 
@@ -98,10 +99,13 @@ impl<'a> State<'a> {
 
         let clear_color = wgpu::Color::BLACK;
         let render_pipeline = create_pipeline(&device, &config);
+        let vert = super::structure::generate_circle_vertices([0.0, 0.0], 0.5, 100);
+        let ind = super::structure::generate_circle_indices(vert.len());
         let vertex_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Vertex Buffer"),
-                contents: bytemuck::cast_slice(super::structure::VERTICES),
+                //contents: bytemuck::cast_slice(super::structure::VERTICES),
+                contents: bytemuck::cast_slice(vert.as_slice()),
                 usage: wgpu::BufferUsages::VERTEX,
             }
         );
@@ -109,7 +113,8 @@ impl<'a> State<'a> {
         let index_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Index Buffer"),
-                contents: bytemuck::cast_slice(super::structure::INDICES),
+                //contents: bytemuck::cast_slice(super::structure::INDICES),
+                contents: bytemuck::cast_slice(ind.as_slice()),
                 usage: wgpu::BufferUsages::INDEX,
             }
         );
@@ -126,7 +131,8 @@ impl<'a> State<'a> {
             window,
             render_pipeline,
             vertex_buffer,
-            index_buffer
+            index_buffer,
+            index_size: ind.len(),
         }
     }
 
@@ -190,7 +196,7 @@ impl<'a> State<'a> {
             _render_pass.set_pipeline(&self.render_pipeline);
             _render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             _render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            _render_pass.draw_indexed(0..super::structure::INDICES.len() as u32, 0, 0..1);
+            _render_pass.draw_indexed(0..self.index_size as u32, 0, 0..1);
         }
 
         self.queue.submit(iter::once(encoder.finish()));
@@ -258,4 +264,3 @@ fn create_pipeline(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration) -
             );
     render_pipeline
 }
-
