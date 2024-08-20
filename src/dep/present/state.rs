@@ -1,4 +1,5 @@
 use std::iter;
+use super::*;
 
 use winit::{
     event::*,
@@ -7,11 +8,17 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-use wgpu::SurfaceConfiguration;
+use wgpu::{BindGroupEntry, SurfaceConfiguration};
 use wgpu::util::DeviceExt;
 use wgpu::VertexStepMode::Vertex;
 
 const SAMPLE_COUNT:u32 =4;
+
+pub struct GPUBuffers {
+    pub feather_buffer: wgpu::Buffer,
+    pub feather_bg: wgpu::BindGroup,
+    pub feather_layout: wgpu::BindGroupLayout,
+}
 
 pub struct State<'a> {
     #[allow(dead_code)]
@@ -31,7 +38,7 @@ pub struct State<'a> {
     index_buffer: wgpu::Buffer,
     texture_view : wgpu::TextureView,
     index_size : usize,
-
+    buffers : GPUBuffers,
 }
 
 impl<'a> State<'a> {
@@ -125,8 +132,8 @@ impl<'a> State<'a> {
 
 
         let clear_color = wgpu::Color::BLACK;
-        let render_pipeline = create_pipeline(&device, &config);
-        let circle = super::structure::Circle::new([0.0, 0.0], 0.5, 100);
+        let render_pipeline = Self::create_pipeline(&device, &config);
+        let circle = super::structure::Circle::new([0.0, 0.0], 0.6, 100);
         //let vert = super::structure::generate_circle_vertices([0.0, 0.0], 0.5, 100);
         //let ind = super::structure::generate_circle_indices(vert.len());
         let vertex_buffer = device.create_buffer_init(
@@ -147,7 +154,7 @@ impl<'a> State<'a> {
             }
         );
 
-        Self {
+         Self {
             instance,
             adapter,
             surface,
@@ -157,11 +164,125 @@ impl<'a> State<'a> {
             clear_color,
             size,
             window,
-            render_pipeline,
+            render_pipeline:render_pipeline.0,
             vertex_buffer,
             index_buffer,
             index_size: circle.indices().len(),
-            texture_view: multisampled_view
+            texture_view: multisampled_view,
+            buffers: render_pipeline.1,
+        }
+    }
+
+    pub fn create_pipeline(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration) -> (wgpu::RenderPipeline, GPUBuffers) {
+        let buffers = Self::init_uniform(device);
+
+        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Shader"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("../../res/shader.wgsl").into()),
+        });
+
+        let render_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("Render Pipeline Layout"),
+                bind_group_layouts: &[
+                    &buffers.feather_layout,
+                ],
+                push_constant_ranges: &[],
+            });
+
+        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Render Pipeline"),
+            layout: Some(&render_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &shader,
+                entry_point: "vs_main", // 1.
+                buffers: &[
+                    super::structure::Vertex::desc(),
+                ], // 2.
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            },
+            fragment: Some(wgpu::FragmentState { // 3.
+                module: &shader,
+                entry_point: "fs_main",
+                targets: &[Some(wgpu::ColorTargetState { // 4.
+                    format: config.format,
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList, // 1.
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw, // 2.
+                cull_mode: Some(wgpu::Face::Back),
+                // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
+                polygon_mode: wgpu::PolygonMode::Fill,
+                // Requires Features::DEPTH_CLIP_CONTROL
+                unclipped_depth: false,
+                // Requires Features::CONSERVATIVE_RASTERIZATION
+                conservative: false,
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState {
+                count: SAMPLE_COUNT, // 1.
+                mask: !0, // 2.
+                alpha_to_coverage_enabled: false, // 3.
+            },
+            multiview   : None,
+            cache    : None,
+        }
+        );
+        (render_pipeline, buffers)
+    }
+
+    pub fn init_uniform(device: &wgpu::Device) -> GPUBuffers{
+        let feather = FeathersUniform {
+            center: [0.0, 0.0],
+            radius: 0.5,
+            feather: 0.1,
+            color: [0.0, 1.0, 0.0, 1.0],
+        };
+        let feather_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Uniform Buffer feather"),
+                contents: bytemuck::cast_slice(&[feather]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            }
+        );
+        
+        let feather_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor{
+            label: Some("feather_bind_group_layout"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry{
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::all(),
+                    ty: wgpu::BindingType::Buffer{
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }
+            ],
+        }
+        );
+
+        let feather_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor{
+            label: Some("feather_bind_group"),
+            layout: &feather_bind_group_layout,
+            entries: &[
+                BindGroupEntry{
+                    binding: 0,
+                    resource: feather_buffer.as_entire_binding(),
+                }
+            ],
+        });
+
+        GPUBuffers {
+            feather_buffer,
+            feather_bg: feather_bind_group,
+            feather_layout: feather_bind_group_layout,
         }
     }
 
@@ -223,6 +344,7 @@ impl<'a> State<'a> {
                 timestamp_writes: None,
             });
             _render_pass.set_pipeline(&self.render_pipeline);
+            _render_pass.set_bind_group(0, &self.buffers.feather_bg, &[]);
             _render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             _render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
             _render_pass.draw_indexed(0..self.index_size as u32, 0, 0..1);
@@ -235,61 +357,4 @@ impl<'a> State<'a> {
     }
 }
 
-fn create_pipeline(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration) -> wgpu::RenderPipeline {
-    let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some("Shader"),
-        source: wgpu::ShaderSource::Wgsl(include_str!("../../res/shader.wgsl").into()),
-    });
 
-    let render_pipeline_layout =
-        device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[],
-            push_constant_ranges: &[],
-        });
-
-    let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        label: Some("Render Pipeline"),
-        layout: Some(&render_pipeline_layout),
-        vertex: wgpu::VertexState {
-            module: &shader,
-            entry_point: "vs_main", // 1.
-            buffers: &[
-                super::structure::Vertex::desc(),
-            ], // 2.
-            compilation_options: wgpu::PipelineCompilationOptions::default(),
-        },
-        fragment: Some(wgpu::FragmentState { // 3.
-            module: &shader,
-            entry_point: "fs_main",
-            targets: &[Some(wgpu::ColorTargetState { // 4.
-                format: config.format,
-                blend: Some(wgpu::BlendState::ALPHA_BLENDING),
-                write_mask: wgpu::ColorWrites::ALL,
-            })],
-            compilation_options: wgpu::PipelineCompilationOptions::default(),
-    }),
-    primitive: wgpu::PrimitiveState {
-        topology: wgpu::PrimitiveTopology::TriangleList, // 1.
-        strip_index_format: None,
-        front_face: wgpu::FrontFace::Ccw, // 2.
-        cull_mode: Some(wgpu::Face::Back),
-        // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
-        polygon_mode: wgpu::PolygonMode::Fill,
-        // Requires Features::DEPTH_CLIP_CONTROL
-        unclipped_depth: false,
-        // Requires Features::CONSERVATIVE_RASTERIZATION
-        conservative: false,
-    },
-    depth_stencil: None,
-    multisample: wgpu::MultisampleState {
-        count: SAMPLE_COUNT, // 1.
-        mask: !0, // 2.
-        alpha_to_coverage_enabled: false, // 3.
-    },
-    multiview   : None,
-    cache    : None,
-            }
-            );
-    render_pipeline
-}

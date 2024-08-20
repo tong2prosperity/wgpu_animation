@@ -87,7 +87,7 @@ impl Circle {
         let step = std::f32::consts::PI * 2.0 / segments as f32;
         vertices.push(Vertex {
             position: [center[0] / aspect_ratio, center[1], 0.0],
-            color: [0.0, 0.0, 0.5],
+            color: [0.0, 1.0, 0.0],
         });
 
         for i in 0..segments + 1 {
