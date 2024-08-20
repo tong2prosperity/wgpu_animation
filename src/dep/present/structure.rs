@@ -1,8 +1,8 @@
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
-    position: [f32; 3],
-    color: [f32; 3],
+    pub position: [f32; 3],
+    pub color: [f32; 3],
 }
 
 pub const WIDTH: f32 = 640.0;
@@ -60,8 +60,8 @@ impl Vertex {
 }
 
 pub struct Circle {
-    vertices: Vec<Vertex>,
-    indices: Vec<u16>,
+    pub vertices: Vec<Vertex>,
+    pub indices: Vec<u16>,
 }
 
 impl Circle {
