@@ -7,8 +7,11 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
+use wgpu::SurfaceConfiguration;
 use wgpu::util::DeviceExt;
 use wgpu::VertexStepMode::Vertex;
+
+const SAMPLE_COUNT:u32 =4;
 
 pub struct State<'a> {
     #[allow(dead_code)]
@@ -26,6 +29,7 @@ pub struct State<'a> {
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
+    texture_view : wgpu::TextureView,
     index_size : usize,
 
 }
@@ -47,6 +51,7 @@ impl<'a> State<'a> {
         // The surface needs to live as long as the window that created it.
         // State owns the window so this should be safe.
         let surface = instance.create_surface(window).unwrap();
+
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -97,15 +102,38 @@ impl<'a> State<'a> {
             view_formats: vec![],
         };
 
+
+        let multisampled_texture_extent = wgpu::Extent3d {
+            width: config.width,
+            height: config.height,
+            depth_or_array_layers: 1,
+        };
+
+        let multisampled_texture_desc = wgpu::TextureDescriptor {
+            size: multisampled_texture_extent,
+            mip_level_count: 1,
+            sample_count: 4,
+            dimension: wgpu::TextureDimension::D2,
+            format: config.format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            label: Some("Multisampled texture"),
+            view_formats: &config.view_formats,
+        };
+
+        let multisampled_texture = device.create_texture(&multisampled_texture_desc);
+        let multisampled_view = multisampled_texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+
         let clear_color = wgpu::Color::BLACK;
         let render_pipeline = create_pipeline(&device, &config);
-        let vert = super::structure::generate_circle_vertices([0.0, 0.0], 0.5, 100);
-        let ind = super::structure::generate_circle_indices(vert.len());
+        let circle = super::structure::Circle::new([0.0, 0.0], 0.5, 100);
+        //let vert = super::structure::generate_circle_vertices([0.0, 0.0], 0.5, 100);
+        //let ind = super::structure::generate_circle_indices(vert.len());
         let vertex_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Vertex Buffer"),
                 //contents: bytemuck::cast_slice(super::structure::VERTICES),
-                contents: bytemuck::cast_slice(vert.as_slice()),
+                contents: bytemuck::cast_slice(circle.vertices()),
                 usage: wgpu::BufferUsages::VERTEX,
             }
         );
@@ -114,7 +142,7 @@ impl<'a> State<'a> {
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Index Buffer"),
                 //contents: bytemuck::cast_slice(super::structure::INDICES),
-                contents: bytemuck::cast_slice(ind.as_slice()),
+                contents: bytemuck::cast_slice(circle.indices()),
                 usage: wgpu::BufferUsages::INDEX,
             }
         );
@@ -132,7 +160,8 @@ impl<'a> State<'a> {
             render_pipeline,
             vertex_buffer,
             index_buffer,
-            index_size: ind.len(),
+            index_size: circle.indices().len(),
+            texture_view: multisampled_view
         }
     }
 
@@ -182,8 +211,8 @@ impl<'a> State<'a> {
             let mut _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
+                    view: &self.texture_view,
+                    resolve_target: Some(&view),
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color{r: 1.0, g:1.0, b:1.0,a:1.0}),
                         store: wgpu::StoreOp::Store,
@@ -254,7 +283,7 @@ fn create_pipeline(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration) -
     },
     depth_stencil: None,
     multisample: wgpu::MultisampleState {
-        count: 1, // 1.
+        count: SAMPLE_COUNT, // 1.
         mask: !0, // 2.
         alpha_to_coverage_enabled: false, // 3.
     },

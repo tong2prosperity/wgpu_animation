@@ -59,65 +59,104 @@ impl Vertex {
     }
 }
 
-pub fn generate_circle_vertices(center: [f32; 2], radius: f32, segments: u32) -> Vec<Vertex> {
-    let mut vertices = Vec::with_capacity(segments as usize);
-    let aspect_ratio = WIDTH / HEIGHT;
+pub struct Circle {
+    vertices: Vec<Vertex>,
+    indices: Vec<u16>,
+}
 
-    // vertices.push(Vertex {
-    //     position: [center[0] / aspect_ratio, center[1], 0.0],
-    //     color: [1.0, 0.0, 0.0], // 默认白色，可以根据需要修改
-    // });
+impl Circle {
+    pub fn new(center: [f32; 2], radius: f32, segments: u32) -> Self {
+        let vertices = Self::generate_circle_vertices(center, radius, segments);
+        let indices = Self::generate_circle_indices(vertices.len());
 
-    let step = std::f32::consts::PI * 2.0 / segments as f32;
-    vertices.push(Vertex {
-        position: [center[0] / aspect_ratio, center[1], 0.0],
-        color: [0.0, 0.0, 0.5], // 默认白色,您可以根据需要修改
-    });
+        Circle { vertices, indices }
+    }
 
-    for i in 0..segments + 1 {
-        let angle = step * i as f32;
-        let x = (center[0] + radius * angle.cos()) / aspect_ratio;
-        let y = center[1] + radius * angle.sin();
+    pub fn vertices(&self) -> &[Vertex] {
+        &self.vertices
+    }
 
+    pub fn indices(&self) -> &[u16] {
+        &self.indices
+    }
 
+    fn generate_circle_vertices(center: [f32; 2], radius: f32, segments: u32) -> Vec<Vertex> {
+        let mut vertices = Vec::with_capacity(segments as usize);
+        let aspect_ratio = WIDTH / HEIGHT;
+
+        let step = std::f32::consts::PI * 2.0 / segments as f32;
         vertices.push(Vertex {
-            position: [x, y, 0.0],
-            color: [1.0, 0.0, 0.5], // 默认白色,您可以根据需要修改
+            position: [center[0] / aspect_ratio, center[1], 0.0],
+            color: [0.0, 0.0, 0.5],
         });
+
+        for i in 0..segments + 1 {
+            let angle = step * i as f32;
+            let x = (center[0] + radius * angle.cos()) / aspect_ratio;
+            let y = center[1] + radius * angle.sin();
+
+            vertices.push(Vertex {
+                position: [x, y, 0.0],
+                color: [1.0, 0.0, 0.5],
+            });
+        }
+
+        vertices
     }
 
-    vertices
-}
+    fn generate_circle_indices(num_vertices: usize) -> Vec<u16> {
+        let mut indices = Vec::with_capacity(num_vertices * 3);
 
-pub fn generate_circle_indices(num_vertices: usize) -> Vec<u16> {
-    let mut indices = Vec::with_capacity(num_vertices * 3);
+        for i in 0..num_vertices {
+            indices.push(0);
+            indices.push(i as u16 + 1);
+            indices.push((i + 1) as u16 % num_vertices as u16 + 1);
+        }
 
-    for i in 0..num_vertices {
-        indices.push(0); // 圆心顶点
-        indices.push(i as u16 + 1); // 当前圆周顶点
-        indices.push((i + 1) as u16 % num_vertices as u16 + 1); // 下一个圆周顶点
+        indices
     }
-
-    indices
 }
 
-// fn generate_circle_vertices(radius: f32, num_segments: u32) -> Vec<Vertex> {
-//     let mut vertices = Vec::with_capacity(num_segments as usize + 1);
+// pub fn generate_circle_vertices(center: [f32; 2], radius: f32, segments: u32) -> Vec<Vertex> {
+//     let mut vertices = Vec::with_capacity(segments as usize);
+//     let aspect_ratio = WIDTH / HEIGHT;
 //
-//     // 圆心
-//     vertices.push(Vertex::new(&[0.0, 0.0, 0.0], &[1.0, 0.0, 0.0]));
+//     // vertices.push(Vertex {
+//     //     position: [center[0] / aspect_ratio, center[1], 0.0],
+//     //     color: [1.0, 0.0, 0.0], // 默认白色，可以根据需要修改
+//     // });
 //
-//     // 计算圆周上的顶点
-//     for i in 0..=num_segments {
-//         let theta = 2.0 * std::f32::consts::PI * (i as f32) / (num_segments as f32);
-//         let x_cos  = theta.cos();
-//         let y_sin  = theta.sin();
-//         let x = radius * x_cos;
-//         let y = radius * y_sin;
-//         vertices.push(Vertex::new(&[x, y, 0.0], &[0.0, 1.0, 0.0]));
+//     let step = std::f32::consts::PI * 2.0 / segments as f32;
+//     vertices.push(Vertex {
+//         position: [center[0] / aspect_ratio, center[1], 0.0],
+//         color: [0.0, 0.0, 0.5], // 默认白色,您可以根据需要修改
+//     });
+//
+//     for i in 0..segments + 1 {
+//         let angle = step * i as f32;
+//         let x = (center[0] + radius * angle.cos()) / aspect_ratio;
+//         let y = center[1] + radius * angle.sin();
+//
+//
+//         vertices.push(Vertex {
+//             position: [x, y, 0.0],
+//             color: [1.0, 0.0, 0.5], // 默认白色,您可以根据需要修改
+//         });
 //     }
 //
 //     vertices
+// }
+//
+// pub fn generate_circle_indices(num_vertices: usize) -> Vec<u16> {
+//     let mut indices = Vec::with_capacity(num_vertices * 3);
+//
+//     for i in 0..num_vertices {
+//         indices.push(0); // 圆心顶点
+//         indices.push(i as u16 + 1); // 当前圆周顶点
+//         indices.push((i + 1) as u16 % num_vertices as u16 + 1); // 下一个圆周顶点
+//     }
+//
+//     indices
 // }
 
 pub const INDICES: &[u16] = &[0, 1, 4,
