@@ -141,21 +141,23 @@ pub async fn run() {
                             // 渲染逻辑放在这里
                             looper.window.request_redraw();
                             last_update = now;
+
+
+                            match looper.render() {
+                                Ok(_) => {}
+                                Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
+                                    looper.state.resize(looper.state.size);
+                                }
+                                Err(wgpu::SurfaceError::OutOfMemory) => {
+                                    log::error!("OutOfMemory");
+                                    control_flow.exit();
+                                }
+                                Err(wgpu::SurfaceError::Timeout) => {
+                                    log::warn!("Surface timeout")
+                                }
+                            }
                         }
-                        println!("draw frame now {:?}", now);
-                        match looper.render() {
-                            Ok(_) => {}
-                            Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
-                                looper.state.resize(looper.state.size);
-                            }
-                            Err(wgpu::SurfaceError::OutOfMemory) => {
-                                log::error!("OutOfMemory");
-                                control_flow.exit();
-                            }
-                            Err(wgpu::SurfaceError::Timeout) => {
-                                log::warn!("Surface timeout")
-                            }
-                        }
+
 
                     }
                     _ => {}
