@@ -1,3 +1,5 @@
+use crate::dep::looper::looper;
+
 pub mod dep;
 
 fn main() {
@@ -5,5 +7,6 @@ fn main() {
         .enable_all()
         .build()
         .unwrap();
-    rt.block_on(dep::init::run());
+    env_logger::init();
+    rt.block_on(looper::run());
 }
