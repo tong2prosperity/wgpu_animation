@@ -15,8 +15,13 @@ struct ActionMatrix {
     action_mat: mat3x3<f32>,
 }
 
+struct MVPMatrix{
+    mvp: mat4x4<f32>,
+}
+
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
 @group(1) @binding(0) var<uniform> action_matrix: ActionMatrix;
+@group(2) @binding(0) var<uniform> mvp_matrix: MVPMatrix;
 
 
 struct VertexOutput {
@@ -24,6 +29,7 @@ struct VertexOutput {
     @location(0) color: vec3<f32>,
     @location(1) uv: vec2<f32>,
 };
+
 
 fn rotate2D(angle: f32) -> mat3x3<f32> {
     let rotate = mat3x3<f32>(
@@ -40,8 +46,8 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.color = model.color;
-    let pos = model.position * rotate2D(action_matrix.theta);
-    out.clip_position = vec4<f32>(pos.xy,0.0, 1.0);
+    let pos = rotate2D(action_matrix.theta) * model.position;
+    out.clip_position = mvp_matrix.mvp * vec4<f32>(pos.xy,0.0, 1.0);
     //out.uv = model.position.xy;
     out.uv = (vec3(model.position.xy, 1.0) * action_matrix.action_mat).xy;
 
@@ -60,4 +66,3 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     return vec4<f32>(in.color.rgb , 1.0);
     //return vec4<f32>(in.color.rgb * alpha, uniforms.color.a * alpha);
 }
- 

@@ -12,6 +12,7 @@ use winit::{
 use wgpu::{BindGroupEntry, SurfaceConfiguration};
 use wgpu::util::DeviceExt;
 use wgpu::VertexStepMode::Vertex;
+use crate::dep::basic::projection::create_ortho_project_matrix;
 
 const SAMPLE_COUNT:u32 =4;
 
@@ -19,6 +20,10 @@ pub struct GPUBuffers {
     pub feather_buffer: wgpu::Buffer,
     pub feather_bg: wgpu::BindGroup,
     pub feather_layout: wgpu::BindGroupLayout,
+
+    pub mvp_buffer : wgpu::Buffer,
+    pub mvp_bg : wgpu::BindGroup,
+    pub mvp_layout : wgpu::BindGroupLayout,
 
     pub mat_buffer: wgpu::Buffer,
     pub mat_bg : wgpu::BindGroup,
@@ -222,6 +227,7 @@ impl<'a> State<'a> {
                 bind_group_layouts: &[
                     &buffers.feather_layout,
                     &buffers.mat_layout,
+                    &buffers.mvp_layout
                 ],
                 push_constant_ranges: &[],
             });
@@ -353,6 +359,47 @@ impl<'a> State<'a> {
         });
 
 
+        let mvp = create_ortho_project_matrix();
+
+
+        let mvp_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Uniform Buffer mat"),
+                contents: bytemuck::cast_slice(&[mvp]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            }
+        );
+
+        let mvp_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor{
+            label: Some("mat_bind_group_layout"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry{
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer{
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }
+            ],
+        });
+
+        let mvp_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor{
+            label: Some("mat_bind_group"),
+            layout: &mvp_bind_group_layout,
+            entries: &[
+                BindGroupEntry{
+                    binding: 0,
+                    resource: mvp_buffer.as_entire_binding(),
+                }
+            ],
+        });
+
+
+
+
         GPUBuffers {
             feather_buffer,
             feather_bg: feather_bind_group,
@@ -361,6 +408,9 @@ impl<'a> State<'a> {
             mat_buffer,
             mat_bg: mat_bind_group,
             mat_layout: mat_bind_group_layout,
+            mvp_buffer,
+            mvp_bg : mvp_bind_group,
+            mvp_layout: mvp_bind_group_layout,
         }
     }
 
@@ -424,6 +474,7 @@ impl<'a> State<'a> {
             _render_pass.set_pipeline(&self.render_pipeline);
             _render_pass.set_bind_group(0, &self.buffers.feather_bg, &[]);
             _render_pass.set_bind_group(1, &self.buffers.mat_bg, &[]);
+            _render_pass.set_bind_group(2, &self.buffers.mvp_bg, &[]);
             _render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             _render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
             _render_pass.draw_indexed(0..self.index_size as u32, 0, 0..1);
@@ -435,5 +486,3 @@ impl<'a> State<'a> {
         Ok(())
     }
 }
-
-

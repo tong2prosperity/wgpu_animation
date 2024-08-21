@@ -6,7 +6,7 @@ pub struct Vertex {
 }
 
 pub const WIDTH: f32 = 640.0;
-pub const HEIGHT: f32 = 960.0;
+pub const HEIGHT: f32 = 640.0;
 
 pub(crate) const VERTICES: &[Vertex] = &[
     Vertex {
@@ -82,7 +82,7 @@ impl Circle {
 
     fn generate_circle_vertices(center: [f32; 2], radius: f32, segments: u32) -> Vec<Vertex> {
         let mut vertices = Vec::with_capacity(segments as usize);
-        let aspect_ratio = WIDTH / HEIGHT;
+        let aspect_ratio = 1.0;
 
         let step = std::f32::consts::PI * 2.0 / segments as f32;
         vertices.push(Vertex {

@@ -1,6 +1,8 @@
 use crate::dep::looper::looper;
 
 pub mod dep;
+mod shapes;
+mod animation;
 
 fn main() {
     let rt = tokio::runtime::Builder::new_current_thread()

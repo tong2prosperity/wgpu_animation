@@ -1,5 +1,6 @@
 use nalgebra::{Matrix3, Rotation3, Vector3};
 use nalgebra::Rotation2;
+use glam::Vec3;
 
 
 #[repr(C)]
