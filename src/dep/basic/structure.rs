@@ -94,11 +94,32 @@ impl Circle {
             let angle = step * i as f32;
             let x = (center[0] + radius * angle.cos()) / aspect_ratio;
             let y = center[1] + radius * angle.sin();
-
-            vertices.push(Vertex {
-                position: [x, y, 0.0],
-                color: [1.0, 0.0, 0.5],
-            });
+            match i {
+                0 .. 30 => {
+                    vertices.push(Vertex {
+                        position: [x, y, 0.0],
+                        color: [1.0, 0.0, 0.0],
+                    });
+                }
+                30 .. 60 => {
+                    vertices.push(Vertex {
+                        position: [x, y, 0.0],
+                        color: [0.0, 1.0, 0.0],
+                    });
+                }
+                60 .. 90 => {
+                    vertices.push(Vertex {
+                        position: [x, y, 0.0],
+                        color: [0.0, 0.0, 1.0],
+                    });
+                }
+                _ => {
+                    vertices.push(Vertex {
+                        position: [x, y, 0.0],
+                        color: [0.5, 0.5, 0.5],
+                    });
+                }
+            }
         }
 
         vertices

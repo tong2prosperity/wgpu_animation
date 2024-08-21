@@ -1,3 +1,4 @@
+use std::f32::consts::PI;
 use std::iter;
 use super::*;
 
@@ -18,6 +19,10 @@ pub struct GPUBuffers {
     pub feather_buffer: wgpu::Buffer,
     pub feather_bg: wgpu::BindGroup,
     pub feather_layout: wgpu::BindGroupLayout,
+
+    pub mat_buffer: wgpu::Buffer,
+    pub mat_bg : wgpu::BindGroup,
+    pub mat_layout: wgpu::BindGroupLayout
 }
 
 pub struct State<'a> {
@@ -39,6 +44,35 @@ pub struct State<'a> {
     texture_view : wgpu::TextureView,
     index_size : usize,
     buffers : GPUBuffers,
+    theta : f32,
+}
+
+impl<'a> State<'a> {
+    pub(crate) fn keyboard_input(&mut self, ke: &KeyEvent) -> bool {
+        match ke {
+           KeyEvent{
+               state: ElementState::Pressed,
+               ..
+           } => match ke.physical_key{
+               PhysicalKey::Code(KeyCode::KeyR) => {
+                   self.update_rotate();
+                   return true;
+               },
+               _ => {
+               }
+           }
+            _ => {}
+        }
+        false
+    }
+
+    fn update_rotate(&mut self) {
+        let f = PI / 10.0;
+        self.theta += f;
+        let fmat = create_rotation_matrix(self.theta);
+        self.queue.write_buffer(&self.buffers.mat_buffer, 0, bytemuck::cast_slice(&[fmat]));
+        println!("you should update here");
+    }
 }
 
 impl<'a> State<'a> {
@@ -170,6 +204,7 @@ impl<'a> State<'a> {
             index_size: circle.indices().len(),
             texture_view: multisampled_view,
             buffers: render_pipeline.1,
+             theta: 0.0,
         }
     }
 
@@ -186,6 +221,7 @@ impl<'a> State<'a> {
                 label: Some("Render Pipeline Layout"),
                 bind_group_layouts: &[
                     &buffers.feather_layout,
+                    &buffers.mat_layout,
                 ],
                 push_constant_ranges: &[],
             });
@@ -279,10 +315,52 @@ impl<'a> State<'a> {
             ],
         });
 
+        let mat = create_rotation_matrix(0.0);
+
+        let mat_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Uniform Buffer mat"),
+                contents: bytemuck::cast_slice(&[mat]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            }
+        );
+
+        let mat_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor{
+            label: Some("mat_bind_group_layout"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry{
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::all(),
+                    ty: wgpu::BindingType::Buffer{
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }
+            ],
+        });
+
+        let mat_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor{
+            label: Some("mat_bind_group"),
+            layout: &mat_bind_group_layout,
+            entries: &[
+                BindGroupEntry{
+                    binding: 0,
+                    resource: mat_buffer.as_entire_binding(),
+                }
+            ],
+        });
+
+
         GPUBuffers {
             feather_buffer,
             feather_bg: feather_bind_group,
             feather_layout: feather_bind_group_layout,
+
+            mat_buffer,
+            mat_bg: mat_bind_group,
+            mat_layout: mat_bind_group_layout,
         }
     }
 
@@ -345,6 +423,7 @@ impl<'a> State<'a> {
             });
             _render_pass.set_pipeline(&self.render_pipeline);
             _render_pass.set_bind_group(0, &self.buffers.feather_bg, &[]);
+            _render_pass.set_bind_group(1, &self.buffers.mat_bg, &[]);
             _render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             _render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
             _render_pass.draw_indexed(0..self.index_size as u32, 0, 0..1);

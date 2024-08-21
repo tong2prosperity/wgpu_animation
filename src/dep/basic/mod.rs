@@ -1,6 +1,9 @@
 pub mod state;
 pub mod structure;
 pub(crate) mod resources;
-mod shapes;
+pub mod shapes;
+pub mod action;
 
 use resources::*;
+use action::*;
+use shapes::*;
