@@ -154,14 +154,15 @@ impl<'a> State<'a> {
 
         let clear_color = wgpu::Color::BLACK;
         let render_pipeline = Self::create_pipeline(&device, &config);
-        let circle = super::structure::Circle::new([0.0, 0.0], 0.6, 100);
+        //let circle = super::structure::Circle::new([0.0, 0.0], 0.2, 100);
+        let circle = crate::shapes::circle::generate_circle(0.2);
         //let vert = super::structure::generate_circle_vertices([0.0, 0.0], 0.5, 100);
         //let ind = super::structure::generate_circle_indices(vert.len());
         let vertex_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Vertex Buffer"),
                 //contents: bytemuck::cast_slice(super::structure::VERTICES),
-                contents: bytemuck::cast_slice(circle.vertices()),
+                contents: bytemuck::cast_slice(&[circle.vertices]),
                 usage: wgpu::BufferUsages::VERTEX,
             }
         );
@@ -170,7 +171,7 @@ impl<'a> State<'a> {
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Index Buffer"),
                 //contents: bytemuck::cast_slice(super::structure::INDICES),
-                contents: bytemuck::cast_slice(circle.indices()),
+                contents: bytemuck::cast_slice(&[circle.indices]),
                 usage: wgpu::BufferUsages::INDEX,
             }
         );
@@ -188,7 +189,7 @@ impl<'a> State<'a> {
             render_pipeline:render_pipeline.0,
             vertex_buffer,
             index_buffer,
-            index_size: circle.indices().len(),
+            index_size: circle.indices.len(),
             texture_view: multisampled_view,
             buffers: render_pipeline.1,
              theta: 0.0,
@@ -221,9 +222,12 @@ impl<'a> State<'a> {
     pub fn create_pipeline(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration) -> (wgpu::RenderPipeline, GPUBuffers) {
         let buffers = Self::init_uniform(device, config);
 
+        let shader_str = std::fs::read_to_string("./src/res/shader.wgsl").expect("failed to read shader file");
+
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../../res/shader.wgsl").into()),
+            //source: wgpu::ShaderSource::Wgsl(include_str!("../../res/shader.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(shader_str.into()),
         });
 
         let render_pipeline_layout =

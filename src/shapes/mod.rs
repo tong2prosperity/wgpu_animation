@@ -1,7 +1,9 @@
+pub mod circle;
 
 pub struct Color {
     data : glam::Vec3
 }
+
 
 pub struct Shadow {
     pub color: Color,

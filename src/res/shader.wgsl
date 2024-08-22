@@ -40,13 +40,34 @@ fn rotate2D(angle: f32) -> mat3x3<f32> {
     return rotate;
  }
 
+fn rotate_around_point(pos: vec2<f32>, center: vec2<f32>, angle: f32) -> vec2<f32> {
+    // 将位置从中心点平移到原点
+    var translated_pos = pos - center;
+
+    // 构建旋转矩阵
+    let cos_angle = cos(angle);
+    let sin_angle = sin(angle);
+    let rotation_matrix = mat2x2<f32>(
+        cos_angle, -sin_angle,
+        sin_angle, cos_angle
+    );
+
+    // 进行旋转并缩放到半径 r
+    translated_pos = rotation_matrix * translated_pos;
+
+    // 将位置从原点平移回中心点
+    return translated_pos + center;
+}
+
+
 @vertex
 fn vs_main(
     model: VertexInput
 ) -> VertexOutput {
     var out: VertexOutput;
     out.color = model.color;
-    let pos = rotate2D(action_matrix.theta) * model.position;
+    //let pos = rotate2D(action_matrix.theta) * model.position;
+    let pos = rotate_around_point(model.position.xy, vec2<f32>(0.4, 0.2), action_matrix.theta);
     out.clip_position = mvp_matrix.mvp * vec4<f32>(pos.xy,0.0, 1.0);
     //out.uv = model.position.xy;
     out.uv = (vec3(model.position.xy, 1.0) * action_matrix.action_mat).xy;

@@ -107,9 +107,9 @@ pub async fn run() {
     let mut looper = Looper::new(&window).await;
 
     let mut last_update = Instant::now();
-
+    event_loop.set_control_flow(ControlFlow::Poll);
     event_loop.run(move |event, control_flow| {
-        control_flow.set_control_flow( ControlFlow::Poll);
+
 
         match event {
             Event::WindowEvent { ref event, window_id, .. } if window_id == looper.window.id() => {
