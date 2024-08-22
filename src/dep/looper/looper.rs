@@ -20,10 +20,10 @@ pub struct Looper<'a> {
 impl<'a> Looper<'a> {
     pub async fn new(window: &'a Window) -> Self {
         let mut state = State::new(&window).await;
+
         Self {
             window,
             state,
-
             surface_configured: false,
         }
     }
@@ -60,30 +60,30 @@ impl<'a> Looper<'a> {
                             self.state.resize(*physical_size);
                             self.surface_configured = true;
                         }
-                        WindowEvent::RedrawRequested => {
-                            self.state.window().request_redraw();
-
-                            if !self.surface_configured {
-                                return true;
-                            }
-
-                            match self.state.render() {
-                                Ok(_) => {}
-                                // Reconfigure the surface if it's lost or outdated
-                                Err(
-                                    wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated,
-                                ) => self.state.resize(self.state.size),
-                                // The system is out of memory, we should probably quit
-                                Err(wgpu::SurfaceError::OutOfMemory) => {
-                                    log::error!("OutOfMemory");
-                                    return false;
-                                }
-                                // We're ignoring timeouts
-                                Err(wgpu::SurfaceError::Timeout) => {
-                                    log::warn!("Surface timeout")
-                                }
-                            }
-                        }
+                        // WindowEvent::RedrawRequested => {
+                        //     self.state.window().request_redraw();
+                        //
+                        //     if !self.surface_configured {
+                        //         return true;
+                        //     }
+                        //
+                        //     match self.state.render() {
+                        //         Ok(_) => {}
+                        //         // Reconfigure the surface if it's lost or outdated
+                        //         Err(
+                        //             wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated,
+                        //         ) => self.state.resize(self.state.size),
+                        //         // The system is out of memory, we should probably quit
+                        //         Err(wgpu::SurfaceError::OutOfMemory) => {
+                        //             log::error!("OutOfMemory");
+                        //             return false;
+                        //         }
+                        //         // We're ignoring timeouts
+                        //         Err(wgpu::SurfaceError::Timeout) => {
+                        //             log::warn!("Surface timeout")
+                        //         }
+                        //     }
+                        // }
                         _ => {}
                     }
                 }

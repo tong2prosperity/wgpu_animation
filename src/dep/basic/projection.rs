@@ -1,9 +1,9 @@
 use glam::*;
+use winit::dpi::Size;
 
-
-pub fn create_ortho_project_matrix() -> Mat4 {
-    let width = crate::dep::basic::structure::WIDTH;
-    let height = crate::dep::basic::structure::HEIGHT;
+pub fn create_ortho_project_matrix(size: (u32, u32)) -> Mat4 {
+    let width = size.0 as f32;
+    let height = size.1 as f32;
     let aspect_ratio = width / height;
     let (left, right)  = (-aspect_ratio, aspect_ratio);
     let bottom = -1.0;

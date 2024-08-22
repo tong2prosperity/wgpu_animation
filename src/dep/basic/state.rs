@@ -9,7 +9,7 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-use wgpu::{BindGroupEntry, SurfaceConfiguration};
+use wgpu::{BindGroupEntry, Device, SurfaceConfiguration, TextureFormat, TextureView};
 use wgpu::util::DeviceExt;
 use wgpu::VertexStepMode::Vertex;
 use crate::dep::basic::projection::create_ortho_project_matrix;
@@ -149,25 +149,7 @@ impl<'a> State<'a> {
         };
 
 
-        let multisampled_texture_extent = wgpu::Extent3d {
-            width: config.width,
-            height: config.height,
-            depth_or_array_layers: 1,
-        };
-
-        let multisampled_texture_desc = wgpu::TextureDescriptor {
-            size: multisampled_texture_extent,
-            mip_level_count: 1,
-            sample_count: 4,
-            dimension: wgpu::TextureDimension::D2,
-            format: config.format,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            label: Some("Multisampled texture"),
-            view_formats: &config.view_formats,
-        };
-
-        let multisampled_texture = device.create_texture(&multisampled_texture_desc);
-        let multisampled_view = multisampled_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let multisampled_view = Self::create_texture_view(&device, &config);
 
 
         let clear_color = wgpu::Color::BLACK;
@@ -213,8 +195,31 @@ impl<'a> State<'a> {
         }
     }
 
+    pub fn create_texture_view(device: &Device, config: &SurfaceConfiguration) -> TextureView {
+        let multisampled_texture_extent = wgpu::Extent3d {
+            width: config.width,
+            height: config.height,
+            depth_or_array_layers: 1,
+        };
+
+        let multisampled_texture_desc = wgpu::TextureDescriptor {
+            size: multisampled_texture_extent,
+            mip_level_count: 1,
+            sample_count: 4,
+            dimension: wgpu::TextureDimension::D2,
+            format: config.format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            label: Some("Multisampled texture"),
+            view_formats: &config.view_formats,
+        };
+
+        let multisampled_texture = device.create_texture(&multisampled_texture_desc);
+        let multisampled_view = multisampled_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        multisampled_view
+    }
+
     pub fn create_pipeline(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration) -> (wgpu::RenderPipeline, GPUBuffers) {
-        let buffers = Self::init_uniform(device);
+        let buffers = Self::init_uniform(device, config);
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
@@ -278,7 +283,7 @@ impl<'a> State<'a> {
         (render_pipeline, buffers)
     }
 
-    pub fn init_uniform(device: &wgpu::Device) -> GPUBuffers{
+    pub fn init_uniform(device: &wgpu::Device, config: &SurfaceConfiguration) -> GPUBuffers{
         let feather = FeathersUniform {
             center: [0.0, 0.0],
             radius: 0.5,
@@ -359,7 +364,7 @@ impl<'a> State<'a> {
         });
 
 
-        let mvp = create_ortho_project_matrix();
+        let mvp = create_ortho_project_matrix((config.width, config.height));
 
 
         let mvp_buffer = device.create_buffer_init(
@@ -424,6 +429,10 @@ impl<'a> State<'a> {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
+            let mvp = create_ortho_project_matrix((new_size.width, new_size.height));
+            self.queue.write_buffer(&self.buffers.mvp_buffer, 0, bytemuck::cast_slice(&[mvp]));
+            let view = Self::create_texture_view(&self.device, &self.config);
+            self.texture_view = view;
         }
     }
 
