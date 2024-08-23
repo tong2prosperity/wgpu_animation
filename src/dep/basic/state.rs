@@ -9,7 +9,7 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-use wgpu::{BindGroupEntry, Device, SurfaceConfiguration, TextureFormat, TextureView};
+use wgpu::{BindGroupEntry, Device, SurfaceConfiguration, TextureDimension, TextureFormat, TextureUsages, TextureView};
 use wgpu::util::DeviceExt;
 use wgpu::VertexStepMode::Vertex;
 use crate::dep::basic::projection::create_ortho_project_matrix;
@@ -47,6 +47,7 @@ pub struct State<'a> {
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
     texture_view : wgpu::TextureView,
+    depth_view : TextureView,
     index_size : usize,
     buffers : GPUBuffers,
     theta : f32,
@@ -155,14 +156,14 @@ impl<'a> State<'a> {
         let clear_color = wgpu::Color::BLACK;
         let render_pipeline = Self::create_pipeline(&device, &config);
         //let circle = super::structure::Circle::new([0.0, 0.0], 0.2, 100);
-        let circle = crate::shapes::circle::generate_circle(0.2);
+        let circle = crate::shapes::circle::generate_arrow(0.2, 1.0);
         //let vert = super::structure::generate_circle_vertices([0.0, 0.0], 0.5, 100);
         //let ind = super::structure::generate_circle_indices(vert.len());
         let vertex_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Vertex Buffer"),
                 //contents: bytemuck::cast_slice(super::structure::VERTICES),
-                contents: bytemuck::cast_slice(&[circle.vertices]),
+                contents: bytemuck::cast_slice(&circle.vertices),
                 usage: wgpu::BufferUsages::VERTEX,
             }
         );
@@ -171,10 +172,12 @@ impl<'a> State<'a> {
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Index Buffer"),
                 //contents: bytemuck::cast_slice(super::structure::INDICES),
-                contents: bytemuck::cast_slice(&[circle.indices]),
+                contents: bytemuck::cast_slice(&circle.indices),
                 usage: wgpu::BufferUsages::INDEX,
             }
         );
+
+        let depth_view = Self::init_depth_stencil(&device, &config);
 
          Self {
             instance,
@@ -193,6 +196,7 @@ impl<'a> State<'a> {
             texture_view: multisampled_view,
             buffers: render_pipeline.1,
              theta: 0.0,
+            depth_view,
         }
     }
 
@@ -274,7 +278,13 @@ impl<'a> State<'a> {
                 // Requires Features::CONSERVATIVE_RASTERIZATION
                 conservative: false,
             },
-            depth_stencil: None,
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: TextureFormat::Depth24PlusStencil8,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less, // 1.
+                stencil: wgpu::StencilState::default(), // 2.
+                bias: wgpu::DepthBiasState::default(),
+            }),
             multisample: wgpu::MultisampleState {
                 count: SAMPLE_COUNT, // 1.
                 mask: !0, // 2.
@@ -285,6 +295,25 @@ impl<'a> State<'a> {
         }
         );
         (render_pipeline, buffers)
+    }
+
+    pub fn init_depth_stencil(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration) -> wgpu::TextureView {
+        let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Depth Texture"),
+            size: wgpu::Extent3d {
+                width: config.width,
+                height: config.height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 4,
+            dimension: TextureDimension::D2,
+            format: TextureFormat::Depth24PlusStencil8,
+            usage: TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &config.view_formats,
+        });
+        let depth_view = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        depth_view
     }
 
     pub fn init_uniform(device: &wgpu::Device, config: &SurfaceConfiguration) -> GPUBuffers{
@@ -437,6 +466,7 @@ impl<'a> State<'a> {
             self.queue.write_buffer(&self.buffers.mvp_buffer, 0, bytemuck::cast_slice(&[mvp]));
             let view = Self::create_texture_view(&self.device, &self.config);
             self.texture_view = view;
+            self.depth_view = Self::init_depth_stencil(&self.device, &self.config);
         }
     }
 
@@ -480,7 +510,19 @@ impl<'a> State<'a> {
                         store: wgpu::StoreOp::Store,
                     },
                 })],
-                depth_stencil_attachment: None,
+                depth_stencil_attachment: Some(
+                    wgpu::RenderPassDepthStencilAttachment {
+                        view: &self.depth_view,
+                        depth_ops: Some(wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(1.0),
+                            store: wgpu::StoreOp::Store,
+                        }),
+                        stencil_ops: Some(wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(0),
+                            store: wgpu::StoreOp::Store,
+                        })
+                    }
+                ),
                 occlusion_query_set: None,
                 timestamp_writes: None,
             });

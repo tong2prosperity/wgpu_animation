@@ -1,6 +1,6 @@
 struct VertexInput {
-@location(0) position: vec3<f32>,
-@location(1) color: vec3<f32>,
+@location(0) position: vec2<f32>,
+//@location(1) color: vec3<f32>,
 }
 
 struct Uniforms {
@@ -65,10 +65,10 @@ fn vs_main(
     model: VertexInput
 ) -> VertexOutput {
     var out: VertexOutput;
-    out.color = model.color;
+    out.color = vec3<f32>(0.0, 0.5, 0.0);
     //let pos = rotate2D(action_matrix.theta) * model.position;
     let pos = rotate_around_point(model.position.xy, vec2<f32>(0.4, 0.2), action_matrix.theta);
-    out.clip_position = mvp_matrix.mvp * vec4<f32>(pos.xy,0.0, 1.0);
+    out.clip_position = mvp_matrix.mvp * vec4<f32>(pos.xy,1.0, 1.0);
     //out.uv = model.position.xy;
     out.uv = (vec3(model.position.xy, 1.0) * action_matrix.action_mat).xy;
 
