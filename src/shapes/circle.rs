@@ -8,12 +8,13 @@ use lyon::path::{Path, PathEvent, Polygon, NO_ATTRIBUTES};
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct IVertex {
-    pub position: [f32; 2],
+    pub position: [f32; 3],
+    pub color: [f32; 3],
 }
 
 pub fn generate_circle(radius: f32) -> VertexBuffers<IVertex, u16> {
     let mut path_builder = Path::builder();
-    path_builder.add_circle(point(0.0, 0.0), radius, lyon::path::Winding::Positive);
+    path_builder.add_circle(point(0.0, 0.0), radius, lyon::path::Winding::Negative);
     let path = path_builder.build();
 
     let mut buffers: VertexBuffers<IVertex, u16> = VertexBuffers::new();
@@ -21,13 +22,23 @@ pub fn generate_circle(radius: f32) -> VertexBuffers<IVertex, u16> {
 
     tessellator.tessellate_path(
         &path,
-        &FillOptions::default(),
+        &FillOptions::tolerance(0.02),
         &mut BuffersBuilder::new(&mut buffers, |vb: FillVertex| {
+            let pos = vb.position().to_array();
             IVertex{
-                position: vb.position().to_array(),
+                position: [pos[0], pos[1], 0.0],
+                color: [1.0, 0.0, 0.0],
             }
         }),
     ).unwrap();
+
+    for ref vertex in &buffers.vertices {
+        println!("pos ({},{})", vertex.position[0], vertex.position[1])
+    }
+
+    for ref ind in & buffers.indices {
+        println!("index {}", ind);
+    }
 
     buffers
 }
@@ -55,7 +66,7 @@ pub fn generate_arrow(radius: f32, length: f32) -> VertexBuffers<IVertex, u16> {
 
 
     let mut arrow_builder = Path::builder();
-    rounded_polygon::add_rounded_polygon(&mut arrow_builder, arrow_polygon, radius, NO_ATTRIBUTES);
+    rounded_polygon::add_rounded_polygon(&mut arrow_builder, arrow_polygon, 0.2, NO_ATTRIBUTES);
     let arrow_path = arrow_builder.build();
 
     fill_tess
@@ -63,8 +74,10 @@ pub fn generate_arrow(radius: f32, length: f32) -> VertexBuffers<IVertex, u16> {
             &arrow_path,
             &FillOptions::tolerance(0.02),
             &mut BuffersBuilder::new(&mut buffers, |v: FillVertex| {
+                let pos = v.position().to_array();
                 IVertex{
-                    position: v.position().to_array(),
+                    position: [pos[0], pos[1], 0.0],
+                    color: [0.0, 0.0, 0.0],
                 }
             }),
         )

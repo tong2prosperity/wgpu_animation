@@ -1,6 +1,6 @@
 struct VertexInput {
 @location(0) position: vec2<f32>,
-//@location(1) color: vec3<f32>,
+@location(1) color: vec3<f32>,
 }
 
 struct Uniforms {
@@ -30,7 +30,6 @@ struct VertexOutput {
     @location(1) uv: vec2<f32>,
 };
 
-
 fn rotate2D(angle: f32) -> mat3x3<f32> {
     let rotate = mat3x3<f32>(
         cos(angle), -sin(angle), 0.0,
@@ -39,6 +38,12 @@ fn rotate2D(angle: f32) -> mat3x3<f32> {
     );
     return rotate;
  }
+
+fn createScaleMatrix(elapsedTime: f32, targetScale: f32, duration: f32) -> mat2x2<f32> {
+  let t = clamp(elapsedTime / duration, 0.0, 1.0);
+  let current_scale = mix(1.0, targetScale, t);
+  return mat2x2<f32>(current_scale, 0.0, 0.0, current_scale);
+}
 
 fn rotate_around_point(pos: vec2<f32>, center: vec2<f32>, angle: f32) -> vec2<f32> {
     // 将位置从中心点平移到原点
@@ -65,12 +70,19 @@ fn vs_main(
     model: VertexInput
 ) -> VertexOutput {
     var out: VertexOutput;
-    out.color = vec3<f32>(0.0, 0.5, 0.0);
+
+
+    //out.color = vec3<f32>(0.0, 0.5, 0.0);
     //let pos = rotate2D(action_matrix.theta) * model.position;
-    let pos = rotate_around_point(model.position.xy, vec2<f32>(0.4, 0.2), action_matrix.theta);
-    out.clip_position = mvp_matrix.mvp * vec4<f32>(pos.xy,1.0, 1.0);
-    //out.uv = model.position.xy;
-    out.uv = (vec3(model.position.xy, 1.0) * action_matrix.action_mat).xy;
+    var pos = rotate_around_point(model.position.xy, vec2<f32>(0.4, 0.2), action_matrix.theta);
+//    if action_matrix.theta > 0.0 {
+//       let scaleMat= createScaleMatrix(0.02, 2.0, 5.0);
+//       pos = pos * scaleMat;
+//    }
+    out.clip_position = mvp_matrix.mvp * vec4<f32>(pos.xy, 0.0, 1.0);
+    out.uv = (mvp_matrix.mvp * vec4<f32>(model.position.xy, 0.0, 1.0)).xy;
+    out.color = model.color;
+    //out.uv = (vec3(model.position.xy, 1.0) * action_matrix.action_mat).xy;
 
     return out;
 }
@@ -80,10 +92,20 @@ fn custom_distance(p1: vec2<f32>, p2: vec2<f32>) -> f32 {
     return sqrt(diff.x * diff.x + diff.y * diff.y);
 }
 
+//@fragment
+//fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+//    let dist = distance(in.uv, uniforms.center);
+//    let alpha = 1- smoothstep(0.0, 1.0, dist);
+//    //return vec4<f32>(in.color.rgb , 1.0);
+//    return vec4<f32>(uniforms.color.xyz * alpha, uniforms.color.a * alpha);
+//}
+
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let dist = distance(in.uv, uniforms.center);
-    let alpha = 1- smoothstep(0.0, 1.0, dist);
-    return vec4<f32>(in.color.rgb , 1.0);
-    //return vec4<f32>(in.color.rgb * alpha, uniforms.color.a * alpha);
+    let dist = length(in.uv - uniforms.center);
+    let maxLen = 1.0;
+    //let alpha = 1- smoothstep(0.0, 1.0, dist);
+    let fade = clamp(dist  / maxLen, 0.0, 1.0);
+    //return vec4<f32>(in.color.rgb , 1.0);
+    return mix(uniforms.color, vec4<f32>(1.0, 1.0, 1.0, 1.0), fade);
 }
