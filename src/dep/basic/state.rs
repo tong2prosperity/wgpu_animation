@@ -155,7 +155,7 @@ impl<'a> State<'a> {
 
         let clear_color = wgpu::Color::BLACK;
         let render_pipeline = Self::create_pipeline(&device, &config);
-        let circle = super::structure::Circle::new([0.0, 0.0], 0.5, 100);
+        let circle = super::structure::Circle::new([-0.5, 0.5], 0.7, 100);
         //let circle = crate::shapes::circle::generate_circle(0.5);
         //let vert = super::structure::generate_circle_vertices([0.0, 0.0], 0.5, 100);
         //let ind = super::structure::generate_circle_indices(vert.len());
