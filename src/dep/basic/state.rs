@@ -12,6 +12,7 @@ use winit::{
 use wgpu::{BindGroupEntry, Device, SurfaceConfiguration, TextureDimension, TextureFormat, TextureUsages, TextureView};
 use wgpu::util::DeviceExt;
 use wgpu::VertexStepMode::Vertex;
+use crate::dep::basic::instance::InstanceManager;
 use crate::dep::basic::projection::create_ortho_project_matrix;
 
 const SAMPLE_COUNT:u32 =4;
@@ -42,6 +43,8 @@ pub struct State<'a> {
     pub size: winit::dpi::PhysicalSize<u32>,
     clear_color: wgpu::Color,
     window: &'a Window,
+
+    instance_manager: InstanceManager,
 
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
@@ -155,7 +158,7 @@ impl<'a> State<'a> {
 
         let clear_color = wgpu::Color::BLACK;
         let render_pipeline = Self::create_pipeline(&device, &config);
-        let circle = super::structure::Circle::new([-0.5, 0.5], 0.7, 100);
+        let circle = super::structure::Circle::new([0.0,0.0], 0.7, 100);
         //let circle = crate::shapes::circle::generate_circle(0.5);
         //let vert = super::structure::generate_circle_vertices([0.0, 0.0], 0.5, 100);
         //let ind = super::structure::generate_circle_indices(vert.len());
@@ -177,6 +180,11 @@ impl<'a> State<'a> {
             }
         );
 
+
+        let mut instance_manager = InstanceManager::new();
+        instance_manager.make_up_instances();
+        instance_manager.init_buffer(&device);
+
         let depth_view = Self::init_depth_stencil(&device, &config);
 
          Self {
@@ -197,6 +205,7 @@ impl<'a> State<'a> {
             buffers: render_pipeline.1,
              theta: 0.0,
             depth_view,
+             instance_manager
         }
     }
 
@@ -253,6 +262,7 @@ impl<'a> State<'a> {
                 entry_point: "vs_main", // 1.
                 buffers: &[
                     super::structure::Vertex::desc(),
+                    instance::InstanceRaw::desc(),
                 ], // 2.
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
@@ -261,8 +271,19 @@ impl<'a> State<'a> {
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState { // 4.
                     format: config.format,
-                    //blend: Some(wgpu::BlendState::ALPHA_BLENDING),
-                    blend: None,
+         //           blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    blend: Some(wgpu::BlendState {
+                        color: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::SrcAlpha,
+                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                        alpha: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::One,
+                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                    }),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
@@ -279,14 +300,14 @@ impl<'a> State<'a> {
                 // Requires Features::CONSERVATIVE_RASTERIZATION
                 conservative: false,
             },
-            // depth_stencil: Some(wgpu::DepthStencilState {
-            //     format: TextureFormat::Depth24PlusStencil8,
-            //     depth_write_enabled: true,
-            //     depth_compare: wgpu::CompareFunction::Less, // 1.
-            //     stencil: wgpu::StencilState::default(), // 2.
-            //     bias: wgpu::DepthBiasState::default(),
-            // }),
-            depth_stencil: None,
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: TextureFormat::Depth24PlusStencil8,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less, // 1.
+                stencil: wgpu::StencilState::default(), // 2.
+                bias: wgpu::DepthBiasState::default(),
+            }),
+            //depth_stencil: None,
             multisample: wgpu::MultisampleState {
                 count: SAMPLE_COUNT, // 1.
                 mask: !0, // 2.
@@ -468,7 +489,7 @@ impl<'a> State<'a> {
             self.queue.write_buffer(&self.buffers.mvp_buffer, 0, bytemuck::cast_slice(&[mvp]));
             let view = Self::create_texture_view(&self.device, &self.config);
             self.texture_view = view;
-            //self.depth_view = Self::init_depth_stencil(&self.device, &self.config);
+            self.depth_view = Self::init_depth_stencil(&self.device, &self.config);
         }
     }
 
@@ -508,24 +529,24 @@ impl<'a> State<'a> {
                     view: &self.texture_view,
                     resolve_target: Some(&view),
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color{r: 1.0, g:1.0, b:1.0,a:1.0}),
+                        load: wgpu::LoadOp::Clear(wgpu::Color{r: 1.0, g:1.0, b:1.0,a:0.0}),
                         store: wgpu::StoreOp::Store,
                     },
                 })],
-                // depth_stencil_attachment: Some(
-                //     wgpu::RenderPassDepthStencilAttachment {
-                //         view: &self.depth_view,
-                //         depth_ops: Some(wgpu::Operations {
-                //             load: wgpu::LoadOp::Clear(1.0),
-                //             store: wgpu::StoreOp::Store,
-                //         }),
-                //         stencil_ops: Some(wgpu::Operations {
-                //             load: wgpu::LoadOp::Clear(0),
-                //             store: wgpu::StoreOp::Store,
-                //         })
-                //     }
-                // ),
-                depth_stencil_attachment: None,
+                depth_stencil_attachment: Some(
+                    wgpu::RenderPassDepthStencilAttachment {
+                        view: &self.depth_view,
+                        depth_ops: Some(wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(1.0),
+                            store: wgpu::StoreOp::Store,
+                        }),
+                        stencil_ops: Some(wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(0),
+                            store: wgpu::StoreOp::Store,
+                        })
+                    }
+                ),
+                //depth_stencil_attachment: None,
                 occlusion_query_set: None,
                 timestamp_writes: None,
             });
@@ -534,8 +555,9 @@ impl<'a> State<'a> {
             _render_pass.set_bind_group(1, &self.buffers.mat_bg, &[]);
             _render_pass.set_bind_group(2, &self.buffers.mvp_bg, &[]);
             _render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            _render_pass.set_vertex_buffer(1, self.instance_manager.get_buffer().slice(..));
             _render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            _render_pass.draw_indexed(0..self.index_size as u32, 0, 0..1);
+            _render_pass.draw_indexed(0..self.index_size as u32, 0, 0..self.instance_manager.instances.len() as u32);
         }
 
         self.queue.submit(iter::once(encoder.finish()));

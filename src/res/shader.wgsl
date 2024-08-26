@@ -3,6 +3,13 @@ struct VertexInput {
 @location(1) color: vec3<f32>,
 }
 
+struct InstanceInput {
+@location(5) p1: vec4<f32>,
+@location(6) p2: vec4<f32>,
+@location(7) p3: vec4<f32>,
+@location(8) p4: vec4<f32>
+}
+
 struct Uniforms {
     center: vec2<f32>,
     radius: f32,
@@ -67,10 +74,11 @@ fn rotate_around_point(pos: vec2<f32>, center: vec2<f32>, angle: f32) -> vec2<f3
 
 @vertex
 fn vs_main(
-    model: VertexInput
+    model: VertexInput,
+    instance: InstanceInput,
 ) -> VertexOutput {
     var out: VertexOutput;
-
+    let inst_mat = mat4x4<f32>(instance.p1, instance.p2, instance.p3, instance.p4);
 
     //out.color = vec3<f32>(0.0, 0.5, 0.0);
     //let pos = rotate2D(action_matrix.theta) * model.position;
@@ -79,8 +87,8 @@ fn vs_main(
 //       let scaleMat= createScaleMatrix(0.02, 2.0, 5.0);
 //       pos = pos * scaleMat;
 //    }
-    out.clip_position = mvp_matrix.mvp * vec4<f32>(pos.xy, 0.0, 1.0);
-    out.uv = (mvp_matrix.mvp * vec4<f32>(model.position.xy, 0.0, 1.0)).xy;
+    out.clip_position = mvp_matrix.mvp * inst_mat * vec4<f32>(pos.xy, 0.0, 1.0);
+    out.uv = (mvp_matrix.mvp * inst_mat * vec4<f32>(model.position.xy, 0.0, 1.0)).xy;
     out.color = model.color;
     //out.uv = (vec3(model.position.xy, 1.0) * action_matrix.action_mat).xy;
 
