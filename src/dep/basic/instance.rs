@@ -14,7 +14,7 @@ pub struct InstanceRaw {
 
 impl Instance {
     pub fn new(position: glam::Vec3, rotation: glam::Mat3) -> Self {
-        let transform = glam::Mat3::from_rotation(rotation) * glam::Mat3::from_translation(position);
+        let transform = glam::Mat3::rotation_y() * glam::Mat3::from_translation(position);
         Self { position, rotation, transform }
     }
 
