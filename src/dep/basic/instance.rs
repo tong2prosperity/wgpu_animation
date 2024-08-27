@@ -6,6 +6,9 @@ pub struct Instance {
     pub position: glam::Vec3,
     pub rotation: glam::Quat,
     pub transform: glam::Mat4,
+    pub theta: f32,
+    pub speed: f32,
+    pub scale: f32,
 }
 
 #[repr(C)]
@@ -14,6 +17,12 @@ pub struct InstanceRaw {
     pub model: [[f32;4];4],
 }
 
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct Instance3DRaw {
+    pub model: [[f32;3];3],
+}
 
 
 const NUM_INSTANCE: usize = 4;
@@ -110,6 +119,32 @@ impl InstanceRaw{
                     offset: mem::size_of::<[f32;12]>() as wgpu::BufferAddress,
                     shader_location: 8,
                 }
+            ],
+        }
+    }
+}
+
+impl Instance3DRaw {
+    pub fn desc() -> wgpu::VertexBufferLayout<'static> {
+        wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<Instance3DRaw>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Instance,
+            attributes: &[
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 9,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32;3]>() as wgpu::BufferAddress,
+                    shader_location: 10,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32;6]>() as wgpu::BufferAddress,
+                    shader_location: 11,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
             ],
         }
     }
