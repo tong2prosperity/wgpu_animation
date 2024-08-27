@@ -1,14 +1,15 @@
 struct VertexInput {
 @location(0) position: vec2<f32>,
 @location(1) color: vec3<f32>,
-}
+};
 
 struct InstanceInput {
 @location(5) p1: vec4<f32>,
 @location(6) p2: vec4<f32>,
 @location(7) p3: vec4<f32>,
-@location(8) p4: vec4<f32>
-}
+@location(8) p4: vec4<f32>,
+@location(9) p5: vec3<f32>
+};
 
 struct Uniforms {
     center: vec2<f32>,
@@ -35,6 +36,7 @@ struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) color: vec3<f32>,
     @location(1) uv: vec2<f32>,
+    @location(2) origin: vec3<f32>
 };
 
 fn rotate2D(angle: f32) -> mat3x3<f32> {
@@ -87,8 +89,9 @@ fn vs_main(
 //       let scaleMat= createScaleMatrix(0.02, 2.0, 5.0);
 //       pos = pos * scaleMat;
 //    }
-    out.clip_position = mvp_matrix.mvp * inst_mat * vec4<f32>(pos.xy, 0.0, 1.0);
+    out.clip_position = vec4<f32>((mvp_matrix.mvp * inst_mat * vec4<f32>(pos.xy, 0.0, 1.0)).xy, 0.0, 1.0);
     out.uv = (mvp_matrix.mvp * inst_mat * vec4<f32>(model.position.xy, 0.0, 1.0)).xy;
+    out.origin = instance.p5;
     out.color = model.color;
     //out.uv = (vec3(model.position.xy, 1.0) * action_matrix.action_mat).xy;
 
@@ -110,7 +113,7 @@ fn custom_distance(p1: vec2<f32>, p2: vec2<f32>) -> f32 {
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let dist = length(in.uv - uniforms.center);
+    let dist = length(in.uv - in.origin.xy);
     let maxLen = 1.0;
     //let alpha = 1- smoothstep(0.0, 1.0, dist);
     let fade = clamp(dist  / maxLen, 0.0, 1.0);

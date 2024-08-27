@@ -8,6 +8,7 @@ use winit::window::{Window, WindowBuilder};
 use crate::dep::basic;
 use crate::dep::basic::state;
 use crate::dep::basic::state::State;
+use game_loop::game_loop;
 
 pub struct Looper<'a> {
     window: &'a Window,

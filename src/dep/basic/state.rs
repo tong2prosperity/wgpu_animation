@@ -275,13 +275,13 @@ impl<'a> State<'a> {
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent {
                             src_factor: wgpu::BlendFactor::SrcAlpha,
-                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                            dst_factor: wgpu::BlendFactor::DstAlpha,
                             operation: wgpu::BlendOperation::Add,
                         },
                         alpha: wgpu::BlendComponent {
-                            src_factor: wgpu::BlendFactor::One,
-                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                            operation: wgpu::BlendOperation::Add,
+                            src_factor: wgpu::BlendFactor::Src,
+                            dst_factor: wgpu::BlendFactor::Dst,
+                            operation: wgpu::BlendOperation::Max,
                         },
                     }),
                     write_mask: wgpu::ColorWrites::ALL,
@@ -529,8 +529,9 @@ impl<'a> State<'a> {
                     view: &self.texture_view,
                     resolve_target: Some(&view),
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color{r: 1.0, g:1.0, b:1.0,a:0.0}),
-                        store: wgpu::StoreOp::Store,
+                        //load: wgpu::LoadOp::Clear(wgpu::Color{r: 0.0, g:1.0, b:1.0,a:0.0}),
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Discard,
                     },
                 })],
                 depth_stencil_attachment: Some(

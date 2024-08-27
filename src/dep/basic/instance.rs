@@ -15,6 +15,7 @@ pub struct Instance {
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct InstanceRaw {
     pub model: [[f32;4];4],
+    pub origin3d: [f32;3],
 }
 
 
@@ -82,6 +83,9 @@ impl Instance {
             position,
             rotation,
             transform,
+            theta: 0.0,
+            speed: 0.0,
+            scale: 0.0,
         }
     }
 
@@ -89,6 +93,7 @@ impl Instance {
         let coll = (glam::Mat4::from_translation(self.position) * glam::Mat4::from_quat(self.rotation)).to_cols_array_2d();
         InstanceRaw {
             model: coll,
+            origin3d: self.position.to_array(),
         }
     }
 }
@@ -118,6 +123,11 @@ impl InstanceRaw{
                     format: wgpu::VertexFormat::Float32x4,
                     offset: mem::size_of::<[f32;12]>() as wgpu::BufferAddress,
                     shader_location: 8,
+                },
+                wgpu::VertexAttribute {
+                    format: wgpu::VertexFormat::Float32x3,
+                    offset: mem::size_of::<[f32;16]>() as wgpu::BufferAddress,
+                    shader_location: 9,
                 }
             ],
         }
