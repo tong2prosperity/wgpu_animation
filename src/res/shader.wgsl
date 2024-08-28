@@ -89,7 +89,7 @@ fn vs_main(
 //       let scaleMat= createScaleMatrix(0.02, 2.0, 5.0);
 //       pos = pos * scaleMat;
 //    }
-    out.clip_position = vec4<f32>((mvp_matrix.mvp * inst_mat * vec4<f32>(pos.xy, 0.0, 1.0)).xy, 0.0, 1.0);
+    out.clip_position = vec4<f32>((mvp_matrix.mvp * inst_mat * vec4<f32>(pos.xy, 0.0, 1.0)).xy, 0.9, 1.0);
     out.uv = (mvp_matrix.mvp * inst_mat * vec4<f32>(model.position.xy, 0.0, 1.0)).xy;
     out.origin = instance.p5;
     out.color = model.color;

@@ -271,19 +271,19 @@ impl<'a> State<'a> {
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState { // 4.
                     format: config.format,
-         //           blend: Some(wgpu::BlendState::ALPHA_BLENDING),
-                    blend: Some(wgpu::BlendState {
-                        color: wgpu::BlendComponent {
-                            src_factor: wgpu::BlendFactor::SrcAlpha,
-                            dst_factor: wgpu::BlendFactor::DstAlpha,
-                            operation: wgpu::BlendOperation::Add,
-                        },
-                        alpha: wgpu::BlendComponent {
-                            src_factor: wgpu::BlendFactor::Src,
-                            dst_factor: wgpu::BlendFactor::Dst,
-                            operation: wgpu::BlendOperation::Max,
-                        },
-                    }),
+                   blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
+         //            blend: Some(wgpu::BlendState {
+         //                color: wgpu::BlendComponent {
+         //                    src_factor: wgpu::BlendFactor::SrcAlpha,
+         //                    dst_factor: wgpu::BlendFactor::DstAlpha,
+         //                    operation: wgpu::BlendOperation::Add,
+         //                },
+         //                alpha: wgpu::BlendComponent {
+         //                    src_factor: wgpu::BlendFactor::Src,
+         //                    dst_factor: wgpu::BlendFactor::Dst,
+         //                    operation: wgpu::BlendOperation::Add,
+         //                },
+         //            }),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
@@ -539,7 +539,7 @@ impl<'a> State<'a> {
                         view: &self.depth_view,
                         depth_ops: Some(wgpu::Operations {
                             load: wgpu::LoadOp::Clear(1.0),
-                            store: wgpu::StoreOp::Store,
+                            store: wgpu::StoreOp::Discard,
                         }),
                         stencil_ops: Some(wgpu::Operations {
                             load: wgpu::LoadOp::Clear(0),
