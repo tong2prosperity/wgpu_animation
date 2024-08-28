@@ -78,7 +78,7 @@ impl InstanceManager {
 
 impl Instance {
     pub fn new(position: glam::Vec3, rotation: glam::Quat) -> Self {
-        let transform = (glam::Mat4::from_translation(position) * glam::Mat4::from_quat(rotation));
+        let transform = glam::Mat4::from_translation(position) * glam::Mat4::from_quat(rotation);
         Instance {
             position,
             rotation,
