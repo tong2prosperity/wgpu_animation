@@ -8,7 +8,7 @@ struct InstanceInput {
 @location(6) p2: vec4<f32>,
 @location(7) p3: vec4<f32>,
 @location(8) p4: vec4<f32>,
-@location(9) p5: vec3<f32>
+@location(9) p5: vec3<f32>,
 };
 
 struct Uniforms {
@@ -36,7 +36,7 @@ struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) color: vec3<f32>,
     @location(1) uv: vec2<f32>,
-    @location(2) origin: vec3<f32>
+    @location(2) @interpolate(flat)  origin: vec3<f32>
 };
 
 fn rotate2D(angle: f32) -> mat3x3<f32> {
@@ -117,6 +117,6 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let maxLen = 1.0;
     //let alpha = 1- smoothstep(0.0, 1.0, dist);
     let fade = clamp(dist  / maxLen, 0.0, 1.0);
-    //return vec4<f32>(in.color.rgb , 1.0);
-    return mix(uniforms.color, vec4<f32>(1.0, 1.0, 1.0, 1.0), fade);
+    return vec4<f32>(in.color.rgb*fade , 0.7);
+    //return mix(uniforms.color, vec4<f32>(1.0, 1.0, 1.0, 1.0), fade);
 }

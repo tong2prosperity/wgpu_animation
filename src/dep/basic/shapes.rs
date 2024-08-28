@@ -1,6 +1,24 @@
 use super::structure::*;
 
 
+pub struct FullQuad {
+    pub vertices: Vec<Vertex>,
+    pub indices: Vec<u16>,
+}
+
+impl FullQuad {
+    pub fn new() -> Self {
+        let vertices = vec![
+            Vertex { position: [-1.0, -1.0, 0.0], color: [1.0, 1.0, 1.0], uv: [0.0, 1.0] },
+            Vertex { position: [1.0, -1.0, 0.0], color: [1.0, 1.0, 1.0], uv: [1.0, 1.0] },
+            Vertex { position: [1.0, 1.0, 0.0], color: [1.0, 1.0, 1.0], uv: [1.0, 0.0] },
+            Vertex { position: [-1.0, 1.0, 0.0], color: [1.0, 1.0, 1.0], uv: [0.0, 0.0] },
+        ];
+        let indices = vec![0, 1, 2, 2, 3, 0];
+        FullQuad { vertices, indices }
+    }
+}
+
 pub struct Rectangle {
     vertices: Vec<Vertex>,
     indices: Vec<u16>,
@@ -29,18 +47,22 @@ impl Rectangle {
             Vertex {
                 position: [-width / 2.0 / aspect_ratio, height / 2.0, 0.0],
                 color: [0.0, 0.0, 0.5],
+                uv: [0.0, 0.0],
             },
             Vertex {
                 position: [width / 2.0 / aspect_ratio, height / 2.0, 0.0],
                 color: [1.0, 0.0, 0.5],
+                uv: [0.0, 0.0],
             },
             Vertex {
                 position: [width / 2.0 / aspect_ratio, -height / 2.0, 0.0],
                 color: [1.0, 0.0, 0.5],
+                uv: [0.0, 0.0],
             },
             Vertex {
                 position: [-width / 2.0 / aspect_ratio, -height / 2.0, 0.0],
                 color: [1.0, 0.0, 0.5],
+                uv: [0.0, 0.0],
             },
         ];
 

@@ -147,7 +147,7 @@ impl<'a> State<'a> {
             width: size.width,
             height: size.height,
             present_mode: surface_caps.present_modes[0],
-            alpha_mode: surface_caps.alpha_modes[0],
+            alpha_mode: surface_caps.alpha_modes[1],
             desired_maximum_frame_latency: 2,
             view_formats: vec![],
         };
@@ -271,25 +271,25 @@ impl<'a> State<'a> {
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState { // 4.
                     format: config.format,
-                   blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
-         //            blend: Some(wgpu::BlendState {
-         //                color: wgpu::BlendComponent {
-         //                    src_factor: wgpu::BlendFactor::SrcAlpha,
-         //                    dst_factor: wgpu::BlendFactor::DstAlpha,
-         //                    operation: wgpu::BlendOperation::Add,
-         //                },
-         //                alpha: wgpu::BlendComponent {
-         //                    src_factor: wgpu::BlendFactor::Src,
-         //                    dst_factor: wgpu::BlendFactor::Dst,
-         //                    operation: wgpu::BlendOperation::Add,
-         //                },
-         //            }),
+                  blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                  //   blend: Some(wgpu::BlendState {
+                  //       color: wgpu::BlendComponent {
+                  //           src_factor: wgpu::BlendFactor::SrcAlpha,
+                  //           dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                  //           operation: wgpu::BlendOperation::Add,
+                  //       },
+                  //       alpha: wgpu::BlendComponent {
+                  //           src_factor: wgpu::BlendFactor::One,
+                  //           dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                  //           operation: wgpu::BlendOperation::Add,
+                  //       },
+                  //   }),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             }),
             primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList, // 1.
+                topology: wgpu::PrimitiveTopology::PointList, // 1.
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw, // 2.
                 cull_mode: Some(wgpu::Face::Back),
