@@ -54,6 +54,8 @@ pub struct State<'a> {
     index_size : usize,
     buffers : GPUBuffers,
     theta : f32,
+
+    full_quad: FullQuad,
 }
 
 impl<'a> State<'a> {
@@ -187,6 +189,8 @@ impl<'a> State<'a> {
 
         let depth_view = Self::init_depth_stencil(&device, &config);
 
+        let full_quad = FullQuad::new(&device, &config);
+
          Self {
             instance,
             adapter,
@@ -205,7 +209,8 @@ impl<'a> State<'a> {
             buffers: render_pipeline.1,
              theta: 0.0,
             depth_view,
-             instance_manager
+             instance_manager,
+             full_quad
         }
     }
 
@@ -289,7 +294,7 @@ impl<'a> State<'a> {
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             }),
             primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::PointList, // 1.
+                topology: wgpu::PrimitiveTopology::TriangleList, // 1.
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw, // 2.
                 cull_mode: Some(wgpu::Face::Back),
@@ -509,6 +514,19 @@ impl<'a> State<'a> {
     }
 
     pub fn update(&mut self) {}
+    
+
+    pub fn render_quad(&mut self) -> Result<(), wgpu::SurfaceError> {
+        let output = self.surface.get_current_texture()?;
+        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let encoder = self.full_quad.render(&self.device, &view);
+
+        self.queue.submit(iter::once(encoder.finish()));
+        output.present();
+
+        Ok(())
+    }
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
@@ -529,7 +547,7 @@ impl<'a> State<'a> {
                     view: &self.texture_view,
                     resolve_target: Some(&view),
                     ops: wgpu::Operations {
-                        //load: wgpu::LoadOp::Clear(wgpu::Color{r: 0.0, g:1.0, b:1.0,a:0.0}),
+                        //load: wgpu::LoadOp::Clear(wgpu::Color{r: 0.0, g:.0, b:.0,a:0.0}),
                         load: wgpu::LoadOp::Load,
                         store: wgpu::StoreOp::Discard,
                     },
