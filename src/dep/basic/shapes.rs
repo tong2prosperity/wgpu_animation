@@ -41,10 +41,10 @@ impl FourGradient {
         let mut point_colors = [glam::Vec4::new(0.0, 0.0, 0.0, 0.0); 4];
         
         
-        points[0] = glam::Vec3::new(-0.4, 0.4, 0.0);
-        points[1] = glam::Vec3::new(0.2, 0.45, 0.0);
-        points[2] = glam::Vec3::new(0.4, -0.1, 0.0);
-        points[3] = glam::Vec3::new(-0.35, -0.3, 0.0);
+        points[0] = glam::Vec3::new(-0.8, 0.8, 0.0);
+        points[1] = glam::Vec3::new(0.4, 0.9, 0.0);
+        points[2] = glam::Vec3::new(0.8, -0.4, 0.0);
+        points[3] = glam::Vec3::new(-0.7, -0.7, 0.0);
 
         point_colors[0] = glam::Vec4::new(0.2235, 0.2627, 0.7176, 1.0);
         point_colors[1] = glam::Vec4::new(0.7411, 0.9686, 0.7176, 1.0);

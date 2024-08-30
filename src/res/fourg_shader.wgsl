@@ -32,14 +32,38 @@ fn vs_main(model: VertexInput) -> VertexOutput {
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var final_color: vec4<f32> = vec4<f32>(0.0, 0.0, 0.0, 0.0);
-    var total_weight: f32 = 0.0;
 
-    for (var i: i32 = 0; i < 4; i++) {
-        let dist = distance(in.uv, cp.color_points[i].position.xy);
-        let weight = 1.0 / (dist * dist + 0.00001); // 避免除以零
-        final_color += cp.color_points[i].color * weight;
-        total_weight += weight;
-    }
+    let d1 = distance(in.uv, cp.color_points[0].position.xy);
+    let d2 = distance(in.uv, cp.color_points[1].position.xy);
+    let d3 = distance(in.uv, cp.color_points[2].position.xy);
+    let d4 = distance(in.uv, cp.color_points[3].position.xy);
 
-    return final_color / total_weight;
+    let sumWeights = d1 + d2 + d3 + d4;
+
+    var w1 = d1 / sumWeights;
+    var w2 = d2 / sumWeights;
+    var w3 = d3 / sumWeights;
+    var w4 = d4 / sumWeights;
+
+
+    // 
+    // w1 /= sumWeights;
+    // w2 /= sumWeights;
+    // w3 /= sumWeights;
+    // w4 /= sumWeights;
+
+    final_color = cp.color_points[0].color * w1 + cp.color_points[1].color * w2 + cp.color_points[2].color * w3 + cp.color_points[3].color * w4;
+
+
+    // final_color = cp.color_points[0].color * w1 + cp.color_points[1].color * w2 + cp.color_points[2].color * w3 + cp.color_points[3].color * w4;
+    // total_weight = w1 + w2 + w3 + w4;
+
+    // for (var i: i32 = 0; i < 4; i++) {
+    //     let dist = distance(in.uv, cp.color_points[i].position.xy);
+    //     let weight = 1.0 / (dist * dist + 0.00001); // 避免除以零
+    //     final_color += cp.color_points[i].color * weight;
+    //     total_weight += weight;
+    // }
+
+    return final_color;
 }

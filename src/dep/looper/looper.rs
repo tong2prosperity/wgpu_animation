@@ -37,6 +37,7 @@ impl<'a> Looper<'a> {
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError>{
         self.state.render_quad()
+        //self.state.render()
     }
 
     pub fn handler(&mut self, event: &Event<()>) -> bool {
