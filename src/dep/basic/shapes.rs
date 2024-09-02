@@ -46,11 +46,17 @@ impl FourGradient {
         points[2] = glam::Vec3::new(0.8, -0.4, 0.0);
         points[3] = glam::Vec3::new(-0.7, -0.7, 0.0);
 
-        point_colors[0] = glam::Vec4::new(0.2235, 0.2627, 0.7176, 1.0);
+/*         point_colors[0] = glam::Vec4::new(0.2235, 0.2627, 0.7176, 1.0);
         point_colors[1] = glam::Vec4::new(0.7411, 0.9686, 0.7176, 1.0);
         point_colors[2] = glam::Vec4::new(0.9725, 0.9568, 0.6509, 1.0);
         point_colors[3] = glam::Vec4::new(0.4196, 0.1529, 0.2156, 1.0);
-        
+         */
+
+        point_colors[0] = glam::Vec4::new(1.0, 0.0, 0.0, 1.0);
+        point_colors[1] = glam::Vec4::new(0.0, 1.0, 0.0, 1.0);
+        point_colors[2] = glam::Vec4::new(0.0, 0.0, 1.0, 1.0);
+        point_colors[3] = glam::Vec4::new(1.0, 1.0, 1.0, 1.0);
+         
         FourGradient { points, point_colors }
     }
 
@@ -62,14 +68,25 @@ impl FourGradient {
         };
 
         for i in 0..4 {
-            uniform.points[i * 3] = self.points[i].x;   
-            uniform.points[i * 3 + 1] = self.points[i].y;
-            uniform.points[i * 3 + 2] = self.points[i].z;
+            uniform.points[i * 4] = self.points[i].x;
+            uniform.points[i * 4 + 1] = self.points[i].y;
+            uniform.points[i * 4 + 2] = self.points[i].z;
+            uniform.points[i * 4 + 3] = 0.0;
             uniform.point_colors[i * 4] = self.point_colors[i].x;
             uniform.point_colors[i * 4 + 1] = self.point_colors[i].y;
             uniform.point_colors[i * 4 + 2] = self.point_colors[i].z;
             uniform.point_colors[i * 4 + 3] = self.point_colors[i].w;
         }
+
+        // for i in 0..4 {
+        //     uniform.points[i * 3] = self.points[i].x;   
+        //     uniform.points[i * 3 + 1] = self.points[i].y;
+        //     uniform.points[i * 3 + 2] = self.points[i].z;
+        //     uniform.point_colors[i * 4] = self.point_colors[i].x;
+        //     uniform.point_colors[i * 4 + 1] = self.point_colors[i].y;
+        //     uniform.point_colors[i * 4 + 2] = self.point_colors[i].z;
+        //     uniform.point_colors[i * 4 + 3] = self.point_colors[i].w;
+        // }
 
         uniform
     }
