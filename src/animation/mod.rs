@@ -1,5 +1,6 @@
 
 use super::shapes::*;
+pub mod physics;
 pub trait Animator {
     fn update(&mut self, delta_time: f32);
     fn apply(&self, shape: &mut dyn Shape);

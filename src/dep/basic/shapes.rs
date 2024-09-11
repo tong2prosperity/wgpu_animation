@@ -78,16 +78,6 @@ impl FourGradient {
             uniform.point_colors[i * 4 + 3] = self.point_colors[i].w;
         }
 
-        // for i in 0..4 {
-        //     uniform.points[i * 3] = self.points[i].x;   
-        //     uniform.points[i * 3 + 1] = self.points[i].y;
-        //     uniform.points[i * 3 + 2] = self.points[i].z;
-        //     uniform.point_colors[i * 4] = self.point_colors[i].x;
-        //     uniform.point_colors[i * 4 + 1] = self.point_colors[i].y;
-        //     uniform.point_colors[i * 4 + 2] = self.point_colors[i].z;
-        //     uniform.point_colors[i * 4 + 3] = self.point_colors[i].w;
-        // }
-
         uniform
     }
     
