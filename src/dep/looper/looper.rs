@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::Instant;
 use winit::keyboard::{KeyCode, PhysicalKey};
@@ -6,9 +5,7 @@ use winit::event_loop::{ControlFlow, EventLoop};
 use winit::event::*;
 use winit::window::{Window, WindowBuilder};
 use crate::dep::basic;
-use crate::dep::basic::state;
 use crate::dep::basic::state::State;
-use game_loop::game_loop;
 
 pub struct Looper<'a> {
     window: &'a Window,
@@ -20,7 +17,7 @@ pub struct Looper<'a> {
 
 impl<'a> Looper<'a> {
     pub async fn new(window: &'a Window) -> Self {
-        let mut state = State::new(&window).await;
+        let state = State::new(&window).await;
 
         Self {
             window,

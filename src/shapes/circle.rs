@@ -1,7 +1,7 @@
 use lyon::algorithms::rounded_polygon;
-use lyon::tessellation::{self, BuffersBuilder, FillOptions, FillTessellator, FillVertex, VertexBuffers};
-use lyon::math::{point, Point};
-use lyon::path::{Path, PathEvent, Polygon, NO_ATTRIBUTES};
+use lyon::tessellation::{BuffersBuilder, FillOptions, FillTessellator, FillVertex, VertexBuffers};
+use lyon::math::point;
+use lyon::path::{Path, Polygon, NO_ATTRIBUTES};
 
 
 

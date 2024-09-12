@@ -1,5 +1,4 @@
 use super::structure::*;
-use rand::Rng;
 use wgpu::util::DeviceExt;
 use bytemuck;
 use super::texture::*;
@@ -36,7 +35,7 @@ impl FourGradient {
     } */
 
     pub fn random_four_points() -> Self {
-        let mut rng = rand::thread_rng();
+        let rng = rand::thread_rng();
         let mut points = [glam::Vec3::new(0.0, 0.0, 0.0); 4];
         let mut point_colors = [glam::Vec4::new(0.0, 0.0, 0.0, 0.0); 4];
         

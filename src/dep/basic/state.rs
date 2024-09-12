@@ -4,14 +4,12 @@ use super::*;
 
 use winit::{
     event::*,
-    event_loop::EventLoop,
     keyboard::{KeyCode, PhysicalKey},
-    window::{Window, WindowBuilder},
+    window::Window,
 };
 
 use wgpu::{BindGroupEntry, Device, SurfaceConfiguration, TextureDimension, TextureFormat, TextureUsages, TextureView};
 use wgpu::util::DeviceExt;
-use wgpu::VertexStepMode::Vertex;
 use crate::dep::basic::instance::InstanceManager;
 use crate::dep::basic::projection::create_ortho_project_matrix;
 

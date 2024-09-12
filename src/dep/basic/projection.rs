@@ -1,5 +1,4 @@
 use glam::*;
-use winit::dpi::Size;
 
 pub fn create_ortho_project_matrix(size: (u32, u32)) -> Mat4 {
     let width = size.0 as f32;

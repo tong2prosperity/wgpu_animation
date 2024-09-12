@@ -10,10 +10,7 @@ mod instance;
 use resources::*;
 use action::*;
 use shapes::*;
-use texture::*;
 
 
-use wgpu::{BindGroupEntry, Device, SurfaceConfiguration, TextureDimension, TextureFormat, TextureUsages, TextureView};
-use wgpu::util::DeviceExt;
-use wgpu::VertexStepMode::Vertex;
+use wgpu::{Device, SurfaceConfiguration, TextureView};
 
