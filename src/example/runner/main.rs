@@ -1,8 +1,7 @@
-use crate::dep::looper::looper;
 
-pub mod dep;
-mod shapes;
-mod animation;
+use embed_wgpu_lib::*;
+
+
 
 fn main() {
     let rt = tokio::runtime::Builder::new_current_thread()
@@ -10,5 +9,5 @@ fn main() {
         .build()
         .unwrap();
     env_logger::init();
-    rt.block_on(looper::run());
+    rt.block_on(dep::looper::looper::run());
 }

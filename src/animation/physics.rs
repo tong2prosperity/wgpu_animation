@@ -11,7 +11,7 @@ impl Physics {
         let mut collider_set = ColliderSet::new();
     
         /* Create the ground. */
-        let collider = ColliderBuilder::cuboid(100.0, 0.1).build();
+        let collider = ColliderBuilder::ball(0.5).build();
         collider_set.insert(collider);
     
         /* Create the bouncing ball. */

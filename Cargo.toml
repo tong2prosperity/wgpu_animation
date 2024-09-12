@@ -1,7 +1,19 @@
 [package]
-name = "embed_wgpu"
+name = "embed_wgpu_lib"
 version = "0.1.0"
 edition = "2021"
+
+[lib]
+name = "embed_wgpu_lib"
+path = "src/lib.rs"
+
+[[bin]]
+name = "embed_wgpu"
+path = "src/example/runner/main.rs"
+
+[[bin]]
+name = "wgpu_physics"
+path = "src/example/physics/main.rs"
 
 [dependencies]
 winit = {version = "0.29", features = ["rwh_05"]}
