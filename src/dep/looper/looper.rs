@@ -106,6 +106,8 @@ pub async fn run() {
     let mut looper = Looper::new(&window).await;
 
     let mut last_update = Instant::now();
+    let mut last_fps_update = Instant::now();
+    let mut frame_count = 0;
     event_loop.set_control_flow(ControlFlow::Poll);
     event_loop.run(move |event, control_flow| {
 
@@ -146,11 +148,17 @@ pub async fn run() {
                             return;
                         }
                         let now = Instant::now();
+                        if now.duration_since(last_fps_update) >= Duration::from_secs(1) {
+                            let fps = frame_count as f64 / now.duration_since(last_fps_update).as_secs_f64();
+                            log::info!("FPS: {:.2}", fps);
+                            last_fps_update = now;
+                            frame_count = 0;
+                        }
                         if now.duration_since(last_update) >= frame_duration {
                             // 渲染逻辑放在这里
                             looper.window.request_redraw();
                             last_update = now;
-
+                            frame_count += 1;
 
                             match looper.render() {
                                 Ok(_) => {}
