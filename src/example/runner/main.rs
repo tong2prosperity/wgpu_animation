@@ -5,6 +5,8 @@ use embed_wgpu_lib::*;
 
 fn main() {
     env_logger::Builder::from_default_env()
+        .filter(Some("wgpu_core"), log::LevelFilter::Warn)
+        .filter(Some("wgpu_hal"), log::LevelFilter::Warn)
         .filter_level(log::LevelFilter::Info)
         .init();
 

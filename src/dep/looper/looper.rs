@@ -6,7 +6,7 @@ use winit::event::*;
 use winit::window::{Window, WindowBuilder};
 use crate::dep::basic;
 use crate::dep::basic::state::State;
-
+use crate::animation::physics::Physics;
 pub struct Looper<'a> {
     window: &'a Window,
     state: State<'a>,
@@ -17,7 +17,9 @@ pub struct Looper<'a> {
 
 impl<'a> Looper<'a> {
     pub async fn new(window: &'a Window) -> Self {
-        let state = State::new(&window).await;
+        let physics = Physics::new();
+        let mut state = State::new(&window).await;
+        state.set_physics(physics);
 
         Self {
             window,
@@ -27,14 +29,14 @@ impl<'a> Looper<'a> {
     }
 
 
-    pub fn update(&mut self) {
-        self.state.update()
+    pub fn update(&mut self, dt: f32) {
+        self.state.update(dt)
     }
 
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError>{
-        self.state.render_quad()
-        //self.state.render()
+        //self.state.render_quad()
+        self.state.render()
     }
 
     pub fn handler(&mut self, event: &Event<()>) -> bool {
@@ -111,7 +113,6 @@ pub async fn run() {
     event_loop.set_control_flow(ControlFlow::Poll);
     event_loop.run(move |event, control_flow| {
 
-
         match event {
             Event::WindowEvent { ref event, window_id, .. } if window_id == looper.window.id() => {
                 match event {
@@ -155,6 +156,8 @@ pub async fn run() {
                             frame_count = 0;
                         }
                         if now.duration_since(last_update) >= frame_duration {
+                            let dt = last_update.elapsed().as_secs_f32();
+                            looper.update(dt);
                             // 渲染逻辑放在这里
                             looper.window.request_redraw();
                             last_update = now;

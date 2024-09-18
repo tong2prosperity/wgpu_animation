@@ -1,3 +1,4 @@
+use rapier2d::prelude::*;
 use nalgebra::{Matrix3, Rotation3, Vector3};
 
 

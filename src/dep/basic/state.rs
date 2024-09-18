@@ -1,6 +1,7 @@
+use super::*;
 use std::f32::consts::PI;
 use std::iter;
-use super::*;
+use crate::animation::physics::Physics;
 
 use winit::{
     event::*,
@@ -8,25 +9,28 @@ use winit::{
     window::Window,
 };
 
-use wgpu::{BindGroupEntry, Device, SurfaceConfiguration, TextureDimension, TextureFormat, TextureUsages, TextureView};
-use wgpu::util::DeviceExt;
 use crate::dep::basic::instance::InstanceManager;
 use crate::dep::basic::projection::create_ortho_project_matrix;
+use wgpu::util::DeviceExt;
+use wgpu::{
+    BindGroupEntry, Device, SurfaceConfiguration, TextureDimension, TextureFormat, TextureUsages,
+    TextureView,
+};
 
-const SAMPLE_COUNT:u32 =4;
+const SAMPLE_COUNT: u32 = 4;
 
 pub struct GPUBuffers {
     pub feather_buffer: wgpu::Buffer,
     pub feather_bg: wgpu::BindGroup,
     pub feather_layout: wgpu::BindGroupLayout,
 
-    pub mvp_buffer : wgpu::Buffer,
-    pub mvp_bg : wgpu::BindGroup,
-    pub mvp_layout : wgpu::BindGroupLayout,
+    pub mvp_buffer: wgpu::Buffer,
+    pub mvp_bg: wgpu::BindGroup,
+    pub mvp_layout: wgpu::BindGroupLayout,
 
     pub mat_buffer: wgpu::Buffer,
-    pub mat_bg : wgpu::BindGroup,
-    pub mat_layout: wgpu::BindGroupLayout
+    pub mat_bg: wgpu::BindGroup,
+    pub mat_layout: wgpu::BindGroupLayout,
 }
 
 pub struct State<'a> {
@@ -47,29 +51,29 @@ pub struct State<'a> {
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
-    texture_view : wgpu::TextureView,
-    depth_view : TextureView,
-    index_size : usize,
-    buffers : GPUBuffers,
-    theta : f32,
+    texture_view: wgpu::TextureView,
+    depth_view: TextureView,
+    index_size: usize,
+    buffers: GPUBuffers,
+    theta: f32,
 
     full_quad: FullQuad,
+    physics: Option<Physics>,
 }
 
 impl<'a> State<'a> {
     pub(crate) fn keyboard_input(&mut self, ke: &KeyEvent) -> bool {
         match ke {
-           KeyEvent{
-               state: ElementState::Pressed,
-               ..
-           } => match ke.physical_key{
-               PhysicalKey::Code(KeyCode::KeyR) => {
-                   self.update_rotate();
-                   return true;
-               },
-               _ => {
-               }
-           }
+            KeyEvent {
+                state: ElementState::Pressed,
+                ..
+            } => match ke.physical_key {
+                PhysicalKey::Code(KeyCode::KeyR) => {
+                    self.update_rotate();
+                    return true;
+                }
+                _ => {}
+            },
             _ => {}
         }
         false
@@ -79,7 +83,8 @@ impl<'a> State<'a> {
         let f = PI / 10.0;
         self.theta += f;
         let fmat = create_rotation_matrix(self.theta);
-        self.queue.write_buffer(&self.buffers.mat_buffer, 0, bytemuck::cast_slice(&[fmat]));
+        self.queue
+            .write_buffer(&self.buffers.mat_buffer, 0, bytemuck::cast_slice(&[fmat]));
         println!("you should update here");
     }
 }
@@ -101,7 +106,6 @@ impl<'a> State<'a> {
         // The surface needs to live as long as the window that created it.
         // State owns the window so this should be safe.
         let surface = instance.create_surface(window).unwrap();
-
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -152,34 +156,27 @@ impl<'a> State<'a> {
             view_formats: vec![],
         };
 
-
         let multisampled_view = Self::create_texture_view(&device, &config);
-
 
         let clear_color = wgpu::Color::BLACK;
         let render_pipeline = Self::create_pipeline(&device, &config);
-        let circle = super::structure::Circle::new([0.0,0.0], 0.7, 100);
+        let circle = super::structure::Circle::new([0.0, 0.0], 0.7, 100);
         //let circle = crate::shapes::circle::generate_circle(0.5);
         //let vert = super::structure::generate_circle_vertices([0.0, 0.0], 0.5, 100);
         //let ind = super::structure::generate_circle_indices(vert.len());
-        let vertex_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Vertex Buffer"),
-                //contents: bytemuck::cast_slice(super::structure::VERTICES),
-                contents: bytemuck::cast_slice(circle.vertices()),
-                usage: wgpu::BufferUsages::VERTEX,
-            }
-        );
+        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Vertex Buffer"),
+            //contents: bytemuck::cast_slice(super::structure::VERTICES),
+            contents: bytemuck::cast_slice(circle.vertices()),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
 
-        let index_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Index Buffer"),
-                //contents: bytemuck::cast_slice(super::structure::INDICES),
-                contents: bytemuck::cast_slice(circle.indices()),
-                usage: wgpu::BufferUsages::INDEX,
-            }
-        );
-
+        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Index Buffer"),
+            //contents: bytemuck::cast_slice(super::structure::INDICES),
+            contents: bytemuck::cast_slice(circle.indices()),
+            usage: wgpu::BufferUsages::INDEX,
+        });
 
         let mut instance_manager = InstanceManager::new();
         instance_manager.make_up_instances();
@@ -189,7 +186,7 @@ impl<'a> State<'a> {
 
         let full_quad = FullQuad::new(&device, &config);
 
-         Self {
+        Self {
             instance,
             adapter,
             surface,
@@ -199,17 +196,22 @@ impl<'a> State<'a> {
             clear_color,
             size,
             window,
-            render_pipeline:render_pipeline.0,
+            render_pipeline: render_pipeline.0,
             vertex_buffer,
             index_buffer,
             index_size: circle.indices.len(),
             texture_view: multisampled_view,
             buffers: render_pipeline.1,
-             theta: 0.0,
+            theta: 0.0,
             depth_view,
-             instance_manager,
-             full_quad
+            instance_manager,
+            full_quad,
+            physics: None,
         }
+    }
+
+    pub fn set_physics(&mut self, physics: Physics) {
+        self.physics = Some(physics);
     }
 
     pub fn create_texture_view(device: &Device, config: &SurfaceConfiguration) -> TextureView {
@@ -231,14 +233,19 @@ impl<'a> State<'a> {
         };
 
         let multisampled_texture = device.create_texture(&multisampled_texture_desc);
-        let multisampled_view = multisampled_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let multisampled_view =
+            multisampled_texture.create_view(&wgpu::TextureViewDescriptor::default());
         multisampled_view
     }
 
-    pub fn create_pipeline(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration) -> (wgpu::RenderPipeline, GPUBuffers) {
+    pub fn create_pipeline(
+        device: &wgpu::Device,
+        config: &wgpu::SurfaceConfiguration,
+    ) -> (wgpu::RenderPipeline, GPUBuffers) {
         let buffers = Self::init_uniform(device, config);
 
-        let shader_str = std::fs::read_to_string("./src/res/shader.wgsl").expect("failed to read shader file");
+        let shader_str =
+            std::fs::read_to_string("./src/res/shader.wgsl").expect("failed to read shader file");
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
@@ -252,7 +259,7 @@ impl<'a> State<'a> {
                 bind_group_layouts: &[
                     &buffers.feather_layout,
                     &buffers.mat_layout,
-                    &buffers.mvp_layout
+                    &buffers.mvp_layout,
                 ],
                 push_constant_ranges: &[],
             });
@@ -269,24 +276,26 @@ impl<'a> State<'a> {
                 ], // 2.
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
-            fragment: Some(wgpu::FragmentState { // 3.
+            fragment: Some(wgpu::FragmentState {
+                // 3.
                 module: &shader,
                 entry_point: "fs_main",
-                targets: &[Some(wgpu::ColorTargetState { // 4.
+                targets: &[Some(wgpu::ColorTargetState {
+                    // 4.
                     format: config.format,
-                  blend: Some(wgpu::BlendState::ALPHA_BLENDING),
-                  //   blend: Some(wgpu::BlendState {
-                  //       color: wgpu::BlendComponent {
-                  //           src_factor: wgpu::BlendFactor::SrcAlpha,
-                  //           dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                  //           operation: wgpu::BlendOperation::Add,
-                  //       },
-                  //       alpha: wgpu::BlendComponent {
-                  //           src_factor: wgpu::BlendFactor::One,
-                  //           dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                  //           operation: wgpu::BlendOperation::Add,
-                  //       },
-                  //   }),
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    //   blend: Some(wgpu::BlendState {
+                    //       color: wgpu::BlendComponent {
+                    //           src_factor: wgpu::BlendFactor::SrcAlpha,
+                    //           dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    //           operation: wgpu::BlendOperation::Add,
+                    //       },
+                    //       alpha: wgpu::BlendComponent {
+                    //           src_factor: wgpu::BlendFactor::One,
+                    //           dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    //           operation: wgpu::BlendOperation::Add,
+                    //       },
+                    //   }),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
@@ -307,23 +316,25 @@ impl<'a> State<'a> {
                 format: TextureFormat::Depth24PlusStencil8,
                 depth_write_enabled: true,
                 depth_compare: wgpu::CompareFunction::Less, // 1.
-                stencil: wgpu::StencilState::default(), // 2.
+                stencil: wgpu::StencilState::default(),     // 2.
                 bias: wgpu::DepthBiasState::default(),
             }),
             //depth_stencil: None,
             multisample: wgpu::MultisampleState {
-                count: SAMPLE_COUNT, // 1.
-                mask: !0, // 2.
+                count: SAMPLE_COUNT,              // 1.
+                mask: !0,                         // 2.
                 alpha_to_coverage_enabled: false, // 3.
             },
-            multiview   : None,
-            cache    : None,
-        }
-        );
+            multiview: None,
+            cache: None,
+        });
         (render_pipeline, buffers)
     }
 
-    pub fn init_depth_stencil(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration) -> wgpu::TextureView {
+    pub fn init_depth_stencil(
+        device: &wgpu::Device,
+        config: &wgpu::SurfaceConfiguration,
+    ) -> wgpu::TextureView {
         let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Depth Texture"),
             size: wgpu::Extent3d {
@@ -342,127 +353,106 @@ impl<'a> State<'a> {
         depth_view
     }
 
-    pub fn init_uniform(device: &wgpu::Device, config: &SurfaceConfiguration) -> GPUBuffers{
+    pub fn init_uniform(device: &wgpu::Device, config: &SurfaceConfiguration) -> GPUBuffers {
         let feather = FeathersUniform {
             center: [0.0, 0.0],
             radius: 0.5,
             feather: 0.1,
             color: [0.0, 1.0, 0.0, 1.0],
         };
-        let feather_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Uniform Buffer feather"),
-                contents: bytemuck::cast_slice(&[feather]),
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            }
-        );
-        
-        let feather_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor{
-            label: Some("feather_bind_group_layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry{
+        let feather_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Uniform Buffer feather"),
+            contents: bytemuck::cast_slice(&[feather]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        let feather_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("feather_bind_group_layout"),
+                entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStages::all(),
-                    ty: wgpu::BindingType::Buffer{
+                    ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
                         min_binding_size: None,
                     },
                     count: None,
-                }
-            ],
-        }
-        );
+                }],
+            });
 
-        let feather_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor{
+        let feather_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("feather_bind_group"),
             layout: &feather_bind_group_layout,
-            entries: &[
-                BindGroupEntry{
-                    binding: 0,
-                    resource: feather_buffer.as_entire_binding(),
-                }
-            ],
+            entries: &[BindGroupEntry {
+                binding: 0,
+                resource: feather_buffer.as_entire_binding(),
+            }],
         });
 
         let mat = create_rotation_matrix(0.0);
 
-        let mat_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Uniform Buffer mat"),
-                contents: bytemuck::cast_slice(&[mat]),
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            }
-        );
+        let mat_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Uniform Buffer mat"),
+            contents: bytemuck::cast_slice(&[mat]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
 
-        let mat_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor{
-            label: Some("mat_bind_group_layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry{
+        let mat_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("mat_bind_group_layout"),
+                entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStages::all(),
-                    ty: wgpu::BindingType::Buffer{
+                    ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
                         min_binding_size: None,
                     },
                     count: None,
-                }
-            ],
-        });
+                }],
+            });
 
-        let mat_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor{
+        let mat_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("mat_bind_group"),
             layout: &mat_bind_group_layout,
-            entries: &[
-                BindGroupEntry{
-                    binding: 0,
-                    resource: mat_buffer.as_entire_binding(),
-                }
-            ],
+            entries: &[BindGroupEntry {
+                binding: 0,
+                resource: mat_buffer.as_entire_binding(),
+            }],
         });
-
 
         let mvp = create_ortho_project_matrix((config.width, config.height));
 
+        let mvp_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Uniform Buffer mat"),
+            contents: bytemuck::cast_slice(&[mvp]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
 
-        let mvp_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Uniform Buffer mat"),
-                contents: bytemuck::cast_slice(&[mvp]),
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            }
-        );
-
-        let mvp_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor{
-            label: Some("mat_bind_group_layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry{
+        let mvp_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("mat_bind_group_layout"),
+                entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStages::VERTEX,
-                    ty: wgpu::BindingType::Buffer{
+                    ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
                         min_binding_size: None,
                     },
                     count: None,
-                }
-            ],
-        });
+                }],
+            });
 
-        let mvp_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor{
+        let mvp_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("mat_bind_group"),
             layout: &mvp_bind_group_layout,
-            entries: &[
-                BindGroupEntry{
-                    binding: 0,
-                    resource: mvp_buffer.as_entire_binding(),
-                }
-            ],
+            entries: &[BindGroupEntry {
+                binding: 0,
+                resource: mvp_buffer.as_entire_binding(),
+            }],
         });
-
-
-
 
         GPUBuffers {
             feather_buffer,
@@ -473,7 +463,7 @@ impl<'a> State<'a> {
             mat_bg: mat_bind_group,
             mat_layout: mat_bind_group_layout,
             mvp_buffer,
-            mvp_bg : mvp_bind_group,
+            mvp_bg: mvp_bind_group,
             mvp_layout: mvp_bind_group_layout,
         }
     }
@@ -489,7 +479,8 @@ impl<'a> State<'a> {
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
             let mvp = create_ortho_project_matrix((new_size.width, new_size.height));
-            self.queue.write_buffer(&self.buffers.mvp_buffer, 0, bytemuck::cast_slice(&[mvp]));
+            self.queue
+                .write_buffer(&self.buffers.mvp_buffer, 0, bytemuck::cast_slice(&[mvp]));
             let view = Self::create_texture_view(&self.device, &self.config);
             self.texture_view = view;
             self.depth_view = Self::init_depth_stencil(&self.device, &self.config);
@@ -511,12 +502,17 @@ impl<'a> State<'a> {
         }
     }
 
-    pub fn update(&mut self) {}
-    
+    pub fn update(&mut self, dt: f32) {
+        if let Some(physics) = &mut self.physics {
+            physics.step();
+        }
+    }
 
     pub fn render_quad(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
-        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let view = output
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
 
         let encoder = self.full_quad.render(&self.device, &view);
 
@@ -550,19 +546,17 @@ impl<'a> State<'a> {
                         store: wgpu::StoreOp::Discard,
                     },
                 })],
-                depth_stencil_attachment: Some(
-                    wgpu::RenderPassDepthStencilAttachment {
-                        view: &self.depth_view,
-                        depth_ops: Some(wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(1.0),
-                            store: wgpu::StoreOp::Discard,
-                        }),
-                        stencil_ops: Some(wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(0),
-                            store: wgpu::StoreOp::Store,
-                        })
-                    }
-                ),
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &self.depth_view,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(1.0),
+                        store: wgpu::StoreOp::Discard,
+                    }),
+                    stencil_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(0),
+                        store: wgpu::StoreOp::Store,
+                    }),
+                }),
                 //depth_stencil_attachment: None,
                 occlusion_query_set: None,
                 timestamp_writes: None,
@@ -574,7 +568,11 @@ impl<'a> State<'a> {
             _render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             _render_pass.set_vertex_buffer(1, self.instance_manager.get_buffer().slice(..));
             _render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            _render_pass.draw_indexed(0..self.index_size as u32, 0, 0..self.instance_manager.instances.len() as u32);
+            _render_pass.draw_indexed(
+                0..self.index_size as u32,
+                0,
+                0..self.instance_manager.instances.len() as u32,
+            );
         }
 
         self.queue.submit(iter::once(encoder.finish()));

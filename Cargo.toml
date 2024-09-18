@@ -25,9 +25,9 @@ bytemuck = { version = "1.4", features = [ "derive" ] }
 tokio = {version="1", features=["full"]}
 game-loop = { version = "1.2.0", features=["winit"] }
 
-nalgebra = "=0.33.0"
 glam = { version = "=0.29.0", features = ["bytemuck"] }
 lyon = {version="=1.0.1"}
 rand = "0.8.5"
 
 rapier2d = { version = "*", features = [ "simd-stable" ] }
+nalgebra = "*"
