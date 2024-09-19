@@ -26,8 +26,6 @@ pub struct Instance3DRaw {
 }
 
 
-const NUM_INSTANCE: usize = 4;
-
 pub struct InstanceManager {
     pub instances: Vec<Instance>,
     pub instance_buffer: Option<wgpu::Buffer>,
@@ -44,12 +42,13 @@ impl InstanceManager {
     pub fn make_up_instances(&mut self) {
         let mut rng = rand::thread_rng();
         let points = vec![
-            glam::Vec3::new(-0.6, 0.6, 0.0),
-            glam::Vec3::new(-0.6, -0.6, 0.0),
-            glam::Vec3::new(0.6, -0.6, 0.0),
-            glam::Vec3::new(0.6, 0.6, 0.0),
+            glam::Vec3::new(0.0, 1.0, 0.0),
+            // glam::Vec3::new(-0.6, 0.6, 0.0),
+            // glam::Vec3::new(-0.6, -0.6, 0.0),
+            // glam::Vec3::new(0.6, -0.6, 0.0),
+            // glam::Vec3::new(0.6, 0.6, 0.0),
         ];
-        for i in 0..NUM_INSTANCE {
+        for i in 0..points.len() {
             let position = points[i];
             let rotation = glam::Quat::from_rotation_z(rng.gen_range(0.0..std::f32::consts::PI));
             self.add_instance(Instance::new(position, rotation));

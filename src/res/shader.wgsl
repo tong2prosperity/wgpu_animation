@@ -46,7 +46,7 @@ fn rotate2D(angle: f32) -> mat3x3<f32> {
         0.0, 0.0, 1.0
     );
     return rotate;
- }
+}
 
 fn createScaleMatrix(elapsedTime: f32, targetScale: f32, duration: f32) -> mat2x2<f32> {
   let t = clamp(elapsedTime / duration, 0.0, 1.0);
