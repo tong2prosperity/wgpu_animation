@@ -33,7 +33,7 @@ pub struct GPUBuffers {
     pub mat_layout: wgpu::BindGroupLayout,
 }
 
-pub struct State<'a> {
+pub struct Renderer<'a> {
     #[allow(dead_code)]
     instance: wgpu::Instance,
     #[allow(dead_code)]
@@ -61,7 +61,7 @@ pub struct State<'a> {
     physics: Option<Physics>,
 }
 
-impl<'a> State<'a> {
+impl<'a> Renderer<'a> {
     pub(crate) fn keyboard_input(&mut self, ke: &KeyEvent) -> bool {
         match ke {
             KeyEvent {
@@ -89,8 +89,8 @@ impl<'a> State<'a> {
     }
 }
 
-impl<'a> State<'a> {
-    pub async fn new(window: &'a Window) -> State<'a> {
+impl<'a> Renderer<'a> {
+    pub async fn new(window: &'a Window) -> Renderer<'a> {
         let size = window.inner_size();
 
         // The instance is a handle to our GPU

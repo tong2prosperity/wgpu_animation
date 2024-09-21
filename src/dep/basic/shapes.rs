@@ -55,7 +55,7 @@ impl FourGradient {
         point_colors[1] = glam::Vec4::new(0.0, 1.0, 0.0, 1.0);
         point_colors[2] = glam::Vec4::new(0.0, 0.0, 1.0, 1.0);
         point_colors[3] = glam::Vec4::new(1.0, 1.0, 1.0, 1.0);
-         
+
         FourGradient { points, point_colors }
     }
 

@@ -1,4 +1,4 @@
-pub mod state;
+pub mod renderer;
 pub mod structure;
 pub(crate) mod resources;
 pub mod shapes;

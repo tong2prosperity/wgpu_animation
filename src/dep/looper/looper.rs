@@ -5,11 +5,11 @@ use winit::event_loop::{ControlFlow, EventLoop};
 use winit::event::*;
 use winit::window::{Window, WindowBuilder};
 use crate::dep::basic;
-use crate::dep::basic::state::State;
+use crate::dep::basic::renderer::Renderer;
 use crate::animation::physics::Physics;
 pub struct Looper<'a> {
     window: &'a Window,
-    state: State<'a>,
+    state: Renderer<'a>,
 
     surface_configured: bool,
 }
@@ -18,7 +18,7 @@ pub struct Looper<'a> {
 impl<'a> Looper<'a> {
     pub async fn new(window: &'a Window) -> Self {
         let physics = Physics::new();
-        let mut state = State::new(&window).await;
+        let mut state = Renderer::new(&window).await;
         state.set_physics(physics);
 
         Self {
